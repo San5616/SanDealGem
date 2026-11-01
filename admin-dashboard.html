@@ -450,7 +450,7 @@
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:5px;gap:6px;flex-wrap:wrap;">
         <!-- 1-Click Buyer Safe Mode Toggle (ON by default: Hides Mediator Name, M.Less, M.ToGet, M.Got) -->
         <button class="btn safe-active" id="buyerSafeModeBtn" onclick="toggleMediatorSafeMode()" style="padding:3px 9px;font-size:0.68rem;">
-          🛡️ Med Hidden (Safe)
+          🛡️ Med (Safe)
         </button>
         <div style="display:flex;gap:5px;">
           <button class="btn" style="padding:3px 7px;font-size:0.64rem;" onclick="openColConfigModal()">📌 Freeze / Cols</button>
@@ -1209,7 +1209,7 @@
       const medKpis = document.querySelectorAll('.med-sensitive-kpi');
       if (mediatorSafeMode) {
         btn.className = 'btn safe-active';
-        btn.innerHTML = '🛡️ Med Hidden (Safe)';
+        btn.innerHTML = '🛡️ Med (Safe)';
         colConfig.cols.mediatorName.show = false;
         colConfig.cols.less.show = false;
         colConfig.cols.toGet.show = false;
@@ -1265,7 +1265,7 @@
       const btn = document.getElementById('buyerSafeModeBtn');
       if (btn) {
         btn.className = mediatorSafeMode ? 'btn safe-active' : 'btn danger';
-        btn.innerHTML = mediatorSafeMode ? '🛡️ Med Hidden (Safe)' : '👁️ Med Visible (Admin)';
+        btn.innerHTML = mediatorSafeMode ? '🛡️ Med (Safe)' : '👁️ Med (Admin)';
       }
       localStorage.setItem('sd_admin_col_cfg_v6', JSON.stringify(colConfig));
       renderAdminOrders();
