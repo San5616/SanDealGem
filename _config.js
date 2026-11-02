@@ -504,3 +504,14 @@ const SD = {
     link.click();
   }
 };
+// Auto-Rebrand SastaDeal -> SanDeal across all pages
+document.addEventListener('DOMContentLoaded', () => {
+  if (document.title.includes('SastaDeal')) {
+    document.title = document.title.replace(/SastaDeal/g, 'SanDeal');
+  }
+  document.querySelectorAll('.brand span, h1, h2, h3, p, footer').forEach(el => {
+    if (el.children.length === 0 && el.textContent.includes('SastaDeal')) {
+      el.textContent = el.textContent.replace(/SastaDeal/g, 'SanDeal');
+    }
+  });
+});
