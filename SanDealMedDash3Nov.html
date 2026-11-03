@@ -1,0 +1,1215 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SanDeal — Mediator Partner Portal</title>
+  <link rel="manifest" href="manifest.json" />
+  <script src="_config.js"></script>
+  <style>
+    /* ─── 1. COMPACT TOP NAVBAR & SLIDE DRAWER ─── */
+    .navbar {
+      position: sticky; top: 0; z-index: 150;
+      background: var(--bg-glass); backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border-color);
+      padding: 7px 11px; display: flex; align-items: center; justify-content: space-between; gap: 6px;
+    }
+    .nav-left, .nav-right { display: flex; align-items: center; gap: 5px; position: relative; }
+    .icon-btn {
+      width: 32px; height: 32px; border-radius: 8px; border: 1px solid var(--border-color);
+      background: var(--bg-secondary); color: var(--text-primary);
+      display: inline-flex; align-items: center; justify-content: center;
+      cursor: pointer; font-size: 0.84rem; transition: all 0.16s; text-decoration: none;
+    }
+    .icon-btn:hover { border-color: var(--accent); transform: translateY(-1px); }
+    .brand { display: flex; align-items: center; gap: 6px; text-decoration: none; color: var(--text-primary); font-weight: 800; font-size: 0.94rem; }
+    .brand-badge {
+      width: 27px; height: 27px; border-radius: 7px;
+      background: linear-gradient(135deg, #a855f7, #6366f1); color: #fff;
+      display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 0.75rem;
+    }
+    .avatar-btn {
+      height: 32px; padding: 0 8px 0 4px; border-radius: 999px; border: 1px solid var(--border-hover);
+      background: var(--bg-secondary); color: var(--text-primary);
+      display: inline-flex; align-items: center; gap: 4px; cursor: pointer; font-size: 0.72rem; font-weight: 700;
+    }
+    .avatar-circle {
+      width: 24px; height: 24px; border-radius: 50%;
+      background: linear-gradient(135deg, #a855f7, #ec4899); color: #fff;
+      display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 0.68rem;
+    }
+
+    /* Slide-Out Left Drawer */
+    .side-drawer-backdrop {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.65); backdrop-filter: blur(3px);
+      z-index: 400; display: none;
+    }
+    .side-drawer-backdrop.open { display: block; }
+    .side-drawer {
+      position: fixed; top: 0; left: 0; bottom: 0; width: 268px;
+      background: var(--bg-secondary); border-right: 1px solid var(--border-color);
+      z-index: 410; padding: 14px; transform: translateX(-100%);
+      transition: transform 0.24s ease; display: flex; flex-direction: column;
+      justify-content: space-between; overflow-y: auto;
+    }
+    .side-drawer.open { transform: translateX(0); }
+    .drawer-link {
+      padding: 8px 10px; border-radius: 8px; color: var(--text-primary);
+      font-size: 0.79rem; font-weight: 600; display: flex; align-items: center; gap: 9px;
+      cursor: pointer; border: none; background: transparent; width: 100%;
+      text-align: left; margin-bottom: 2px; text-decoration: none;
+    }
+    .drawer-link:hover, .drawer-link.active { background: var(--accent-glow); color: var(--accent); }
+
+    body.privacy-blur .mono-amt { filter: blur(6px); user-select: none; }
+
+    /* Spinning Loader Overlay */
+    .loading-overlay {
+      position: fixed; inset: 0; background: rgba(11, 17, 32, 0.72);
+      backdrop-filter: blur(4px); z-index: 9000; display: none;
+      align-items: center; justify-content: center; padding: 20px;
+    }
+    .loading-overlay.open { display: flex; }
+    .loader-box {
+      background: var(--bg-secondary); border: 1px solid var(--border-hover);
+      border-radius: 16px; padding: 20px 24px; text-align: center;
+      box-shadow: var(--shadow-lg); max-width: 310px; width: 100%;
+    }
+    .spinner-ring {
+      width: 38px; height: 38px; border: 4px solid var(--border-color);
+      border-top-color: #a855f7; border-radius: 50%;
+      margin: 0 auto 10px; animation: sdSpin 0.75s linear infinite;
+    }
+    @keyframes sdSpin { to { transform: rotate(360deg); } }
+
+    /* 1-Line Scrolling Marquee Ticker */
+    .marquee-bar {
+      background: linear-gradient(90deg, rgba(168,85,247,0.16), rgba(30,41,59,0.75));
+      border: 1px solid rgba(168,85,247,0.35); border-radius: 8px;
+      padding: 4px 10px; margin-bottom: 8px; overflow: hidden; white-space: nowrap;
+      display: none; align-items: center; gap: 8px; font-size: 0.72rem;
+    }
+    .marquee-bar.show { display: flex; }
+    .marquee-track {
+      display: inline-block; padding-left: 100%;
+      animation: sdMarquee 22s linear infinite; font-weight: 600; color: var(--text-primary);
+    }
+    .marquee-track:hover { animation-play-state: paused; }
+    @keyframes sdMarquee { 0% { transform: translateX(0); } 100% { transform: translateX(-100%); } }
+
+    /* Blinking SLA Badges */
+    @keyframes blinkWarn {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.35; transform: scale(0.97); }
+    }
+    .blink-badge {
+      display: inline-flex; align-items: center; gap: 3px;
+      padding: 2px 6px; border-radius: 999px; font-size: 0.6rem; font-weight: 800;
+      animation: blinkWarn 1.15s infinite ease-in-out; white-space: nowrap;
+    }
+    .blink-badge.yellow { background: rgba(245, 158, 11, 0.22); color: #f59e0b; border: 1px solid #f59e0b; }
+    .blink-badge.orange { background: rgba(249, 115, 22, 0.22); color: #fb923c; border: 1px solid #fb923c; }
+    .blink-badge.red { background: rgba(239, 68, 68, 0.25); color: #ef4444; border: 1px solid #ef4444; }
+
+    .copy-chip {
+      cursor: pointer; display: inline-flex; align-items: center; gap: 3px;
+      padding: 1px 5px; border-radius: 4px; font-size: 0.64rem;
+      background: var(--bg-primary); border: 1px solid var(--border-color); color: var(--accent);
+    }
+
+    .container { max-width: 1450px; margin: 0 auto; padding: 8px 10px 80px; }
+
+    .greeting-card {
+      background: var(--bg-secondary); border: 1px solid var(--border-color);
+      border-radius: 12px; padding: 9px 12px; display: flex; align-items: center;
+      justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 8px;
+    }
+
+    .dash-tabs {
+      display: flex; gap: 5px; overflow-x: auto; padding-bottom: 6px; margin-bottom: 8px;
+      border-bottom: 1px solid var(--border-color); scrollbar-width: none;
+    }
+    .dash-tabs::-webkit-scrollbar { display: none; }
+    .dash-tab {
+      padding: 6px 11px; border-radius: 7px; border: 1px solid var(--border-color);
+      background: var(--bg-secondary); color: var(--text-secondary);
+      font-weight: 600; font-size: 0.73rem; cursor: pointer; white-space: nowrap;
+    }
+    .dash-tab.active { background: #a855f7; color: #fff; border-color: transparent; font-weight: 700; }
+
+    /* Extra-Small Compact Passbook KPI Strip */
+    .kpi-grid {
+      display: flex; gap: 6px; overflow-x: auto; padding-bottom: 4px; margin-bottom: 7px;
+      scroll-snap-type: x mandatory; scrollbar-width: none;
+    }
+    .kpi-grid::-webkit-scrollbar { display: none; }
+    .kpi-grid.grid-mode { display: grid; grid-template-columns: repeat(auto-fill, minmax(98px, 1fr)); overflow-x: visible; }
+    .kpi-grid.hidden-mode { display: none; }
+    .kpi-card {
+      flex: 0 0 auto; min-width: 96px; background: var(--bg-secondary);
+      border: 1px solid var(--border-color); border-radius: 8px; padding: 5px 8px;
+      scroll-snap-align: start; cursor: pointer;
+    }
+    .kpi-label {
+      font-size: 0.51rem; font-weight: 700; text-transform: uppercase;
+      color: var(--text-secondary); display: block; margin-bottom: 1px; white-space: nowrap;
+    }
+    .kpi-val { font-size: 0.76rem; font-weight: 800; line-height: 1.15; white-space: nowrap; }
+
+    .search-strip { background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 10px; padding: 8px; margin-bottom: 8px; }
+    .input-ctrl, .select-ctrl {
+      padding: 6px 9px; border-radius: 7px; border: 1px solid var(--border-color);
+      background: var(--bg-primary); color: var(--text-primary); font-size: 0.75rem; outline: none;
+    }
+    .quick-pills {
+      display: flex; gap: 5px; overflow-x: auto; padding-top: 6px; margin-top: 6px;
+      border-top: 1px solid var(--border-color); scrollbar-width: none;
+    }
+    .quick-pills::-webkit-scrollbar { display: none; }
+    .q-pill {
+      padding: 4px 9px; border-radius: 999px; font-size: 0.67rem; font-weight: 600;
+      background: var(--bg-primary); border: 1px solid var(--border-color);
+      color: var(--text-secondary); cursor: pointer; white-space: nowrap;
+    }
+    .q-pill.active { background: rgba(168,85,247,0.2); color: #c084fc; border-color: #a855f7; }
+
+    /* Table & Sticky Columns */
+    .table-wrap {
+      background: var(--bg-secondary); border: 1px solid var(--border-color);
+      border-radius: 10px; overflow-x: auto; max-height: 70vh; -webkit-overflow-scrolling: touch;
+    }
+    table { width: 100%; border-collapse: collapse; font-size: 0.71rem; }
+    thead th {
+      position: sticky; top: 0; z-index: 20; background: var(--bg-tertiary);
+      color: var(--text-secondary); font-weight: 700; text-transform: uppercase;
+      font-size: 0.6rem; padding: 7px 5px; text-align: left;
+      border-bottom: 1px solid var(--border-color); cursor: pointer; white-space: nowrap;
+    }
+    tbody tr { border-bottom: 1px solid var(--border-color); }
+    tbody tr:hover { background: rgba(168, 85, 247, 0.06); }
+    tbody td { padding: 5px; vertical-align: middle; white-space: nowrap; }
+
+    th.sticky-col-1, td.sticky-col-1 {
+      position: sticky; left: 0; z-index: 15; background: var(--bg-secondary);
+      border-right: 1px solid var(--border-color);
+    }
+    thead th.sticky-col-1 { z-index: 26; background: var(--bg-tertiary); }
+
+    th.sticky-col-2, td.sticky-col-2 {
+      position: sticky; left: 48px; z-index: 15; background: var(--bg-secondary);
+      border-right: 2px solid #a855f7;
+    }
+    thead th.sticky-col-2 { z-index: 26; background: var(--bg-tertiary); }
+
+    .btn-sm {
+      padding: 4px 8px; border-radius: 6px; border: 1px solid var(--border-color);
+      background: var(--bg-secondary); color: var(--text-primary); font-size: 0.68rem;
+      font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;
+    }
+    .wa-btn {
+      padding: 4px 7px; border-radius: 6px; background: rgba(34, 197, 94, 0.16);
+      color: #22c55e; border: 1px solid rgba(34, 197, 94, 0.35);
+      font-size: 0.68rem; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 3px;
+    }
+
+    .cards-grid { display: none; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 10px; }
+    .order-card {
+      background: var(--bg-secondary); border: 1px solid var(--border-color);
+      border-radius: 11px; padding: 10px 11px; display: flex; flex-direction: column; gap: 5px;
+    }
+
+    .form-panel { max-width: 720px; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 14px; padding: 15px; }
+    .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 9px; }
+    .field label { display: block; font-size: 0.7rem; font-weight: 700; color: var(--text-secondary); margin-bottom: 3px; }
+    .field input, .field select, .field textarea {
+      width: 100%; padding: 6px 9px; border-radius: 7px; border: 1px solid var(--border-color);
+      background: var(--bg-primary); color: var(--text-primary); font-size: 0.76rem; outline: none;
+    }
+
+    .tab-pane { display: none; }
+    .tab-pane.active { display: block; }
+
+    .modal-backdrop {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.75); backdrop-filter: blur(3px);
+      display: none; align-items: center; justify-content: center; z-index: 500; padding: 14px;
+    }
+    .modal-backdrop.open { display: flex; }
+    .modal-box {
+      width: 100%; max-width: 450px; max-height: 90vh; overflow-y: auto;
+      background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 16px; padding: 16px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Spinning Loader Overlay -->
+  <div class="loading-overlay" id="medLoaderOverlay">
+    <div class="loader-box">
+      <div class="spinner-ring"></div>
+      <div style="font-weight:800;font-size:0.9rem;" id="medLoaderTitle">Processing...</div>
+      <div style="font-size:0.72rem;color:var(--text-secondary);margin-top:4px;" id="medLoaderSub">Syncing with SanDeal</div>
+    </div>
+  </div>
+
+  <!-- Full-Screen Image Lightbox -->
+  <div class="modal-backdrop" id="medImageZoomModal" onclick="this.classList.remove('open')">
+    <div style="max-width:92vw;max-height:88vh;text-align:center;">
+      <img id="medZoomImg" src="" alt="Zoom" style="max-width:100%;max-height:82vh;border-radius:12px;background:#fff;padding:4px;" />
+      <div style="margin-top:8px;color:#fff;font-size:0.76rem;font-weight:700;" id="medZoomCaption">Tap anywhere to close</div>
+    </div>
+  </div>
+
+  <!-- Multi-WhatsApp App Chooser Modal -->
+  <div class="modal-backdrop" id="medWaChooserModal">
+    <div class="modal-box" style="max-width:380px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+        <h3 style="font-size:0.9rem;">🟢 Send via WhatsApp (SanDeal)</h3>
+        <button onclick="document.getElementById('medWaChooserModal').classList.remove('open')" style="background:none;border:none;color:var(--text-secondary);font-size:1.1rem;cursor:pointer;">✕</button>
+      </div>
+      <textarea id="medWaPreviewBox" rows="4" class="mono" style="width:100%;font-size:0.68rem;padding:6px;border-radius:7px;background:var(--bg-primary);color:var(--text-primary);border:1px solid var(--border-color);margin-bottom:8px;"></textarea>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+        <button class="wa-btn" style="padding:9px;justify-content:center;font-size:0.75rem;" onclick="launchMedWa('normal')">
+          🟢 Main / Clone WA
+        </button>
+        <button class="btn-sm" style="padding:9px;justify-content:center;font-size:0.75rem;background:#a855f7;color:#fff;border:none;font-weight:800;" onclick="launchMedWa('business')">
+          💼 WA Business
+        </button>
+        <button class="btn-sm" style="padding:8px;justify-content:center;font-size:0.73rem;" onclick="launchMedWa('system_share')">
+          📱 Pick App / Clone
+        </button>
+        <button class="btn-sm" style="padding:8px;justify-content:center;font-size:0.73rem;" onclick="launchMedWa('web')">
+          🌐 wa.me Link
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Slide-Out Left Drawer -->
+  <div class="side-drawer-backdrop" id="medDrawerBackdrop" onclick="toggleMedDrawer(false)"></div>
+  <aside class="side-drawer" id="medSideDrawer">
+    <div>
+      <div style="display:flex;align-items:center;justify-content:space-between;padding-bottom:10px;margin-bottom:10px;border-bottom:1px solid var(--border-color);">
+        <div class="brand">
+          <div class="brand-badge">SD</div>
+          <div>
+            <div id="drawerMedName" style="font-size:0.86rem;">Mediator Portal</div>
+            <div class="mono" style="font-size:0.64rem;color:#c084fc;">SanDeal Partner</div>
+          </div>
+        </div>
+        <button class="icon-btn" onclick="toggleMedDrawer(false)">✕</button>
+      </div>
+
+      <button class="drawer-link active" onclick="switchMedTab('medOrdersTab');toggleMedDrawer(false)">📦 Assigned Orders</button>
+      <button class="drawer-link" onclick="switchMedTab('medSettleTab');toggleMedDrawer(false)">💸 Batch Mark Refund Sent</button>
+      <button class="drawer-link" onclick="switchMedTab('medOfferDealTab');toggleMedDrawer(false)">🔥 Offer New Deal to Admin</button>
+      <button class="drawer-link" onclick="openMedColModal();toggleMedDrawer(false)">📌 Freeze & Hide Columns</button>
+      <button class="drawer-link" onclick="exportMedOrders('xls');toggleMedDrawer(false)">📊 Export Pending Forms XLS</button>
+      <button class="drawer-link" onclick="switchMedTab('medQueryTab');toggleMedDrawer(false)">📩 Contact SanDeal Admin</button>
+    </div>
+    <button class="drawer-link" style="color:#ef4444;border-top:1px solid var(--border-color);padding-top:10px;" onclick="SD.logout()">🚪 Sign Out</button>
+  </aside>
+
+  <!-- Compact Top Navbar -->
+  <nav class="navbar">
+    <div class="nav-left">
+      <button class="icon-btn" onclick="toggleMedDrawer(true)" title="Open Menu">☰</button>
+      <a href="index.html" class="brand">
+        <div class="brand-badge">SD</div>
+        <span>SanDeal</span>
+      </a>
+    </div>
+
+    <div class="nav-right">
+      <button class="icon-btn" onclick="refreshMediatorData(true)" title="Sync Latest Orders">🔄</button>
+      <button class="icon-btn" onclick="toggleMedPrivacy()" id="medPrivBtn" title="Privacy Blur Mode">👁️</button>
+      <button class="icon-btn" onclick="SD.toggleTheme()" title="Theme">🌓</button>
+      <button class="icon-btn" style="color:#22c55e;border-color:rgba(34,197,94,0.35);" onclick="contactSanDealAdminWa()" title="WhatsApp Admin">💬</button>
+
+      <button class="avatar-btn" onclick="toggleMedDrawer(true)">
+        <div class="avatar-circle" id="medNavInitials">M</div>
+        <span id="medNavShortName">Mediator</span>
+      </button>
+    </div>
+  </nav>
+
+  <main class="container">
+    <!-- 1-Line Scrolling Marquee Ticker -->
+    <div class="marquee-bar" id="medTopMarquee">
+      <span style="font-weight:800;color:#c084fc;flex-shrink:0;">📢 SANDEAL:</span>
+      <div style="overflow:hidden;flex:1;">
+        <div class="marquee-track" id="medMarqueeText">Welcome to SanDeal Mediator Portal!</div>
+      </div>
+    </div>
+
+    <!-- Greeting & Speed Scorecard Banner -->
+    <div class="greeting-card">
+      <div style="display:flex;align-items:center;gap:9px;">
+        <div class="avatar-circle" style="width:34px;height:34px;font-size:0.85rem;" id="medGreetInitials">M</div>
+        <div>
+          <div style="font-weight:800;font-size:0.86rem;" id="medGreetingTitle">Welcome, Partner!</div>
+          <div style="font-size:0.67rem;color:var(--text-secondary);" id="medGreetingSub">Loading mediator passbook...</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:5px;align-items:center;">
+        <button class="btn-sm" onclick="exportMedOrders('xls')">📊 Export XLS</button>
+        <button class="btn-sm" style="background:#a855f7;color:#fff;border:none;font-weight:800;" onclick="switchMedTab('medSettleTab')">💸 Mark Refund Sent</button>
+      </div>
+    </div>
+
+    <!-- 4 Navigation Tabs -->
+    <div class="dash-tabs">
+      <button class="dash-tab active" data-tab="medOrdersTab" onclick="switchMedTab('medOrdersTab')">📦 My Orders</button>
+      <button class="dash-tab" data-tab="medSettleTab" onclick="switchMedTab('medSettleTab')">💸 Batch Mark Refund Sent</button>
+      <button class="dash-tab" data-tab="medOfferDealTab" onclick="switchMedTab('medOfferDealTab')">🔥 Offer New Deal</button>
+      <button class="dash-tab" data-tab="medQueryTab" onclick="switchMedTab('medQueryTab')">📩 Contact Admin</button>
+    </div>
+
+    <!-- =====================================================================
+         TAB 1: ASSIGNED ORDERS (PASSBOOK KPIs + FREEZE + DEAL TYPE BADGE)
+         ===================================================================== -->
+    <section id="medOrdersTab" class="tab-pane active">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;font-size:0.64rem;color:var(--text-secondary);">
+        <button class="btn-sm" style="padding:2px 7px;font-size:0.63rem;" onclick="openMedColModal()">📌 Freeze / Cols</button>
+        <div style="display:flex;gap:4px;">
+          <button class="btn-sm" style="padding:2px 6px;font-size:0.62rem;" onclick="document.getElementById('medKpiStrip').classList.toggle('grid-mode')">📐 Grid/Swipe</button>
+          <button class="btn-sm" style="padding:2px 6px;font-size:0.62rem;" onclick="document.getElementById('medKpiStrip').classList.toggle('hidden-mode')">👁️ Hide</button>
+        </div>
+      </div>
+
+      <!-- 6 Compact Mediator Passbook KPI Cards -->
+      <div class="kpi-grid" id="medKpiStrip">
+        <div class="kpi-card" onclick="setMedQuickPreset('ALL')"><span class="kpi-label">Total Orders</span><div class="kpi-val mono" id="mKpiTotal">0</div></div>
+        <div class="kpi-card" onclick="setMedQuickPreset('FORM_FILLED')"><span class="kpi-label">Form Filled</span><div class="kpi-val mono" style="color:#38bdf8" id="mKpiFormFilled">0</div></div>
+        <div class="kpi-card" onclick="setMedQuickPreset('PENDING_REFUND')"><span class="kpi-label">Pending Refund (₹)</span><div class="kpi-val mono mono-amt" style="color:#f59e0b" id="mKpiPendingAmt">₹0</div></div>
+        <div class="kpi-card" onclick="setMedQuickPreset('GOT_REFUND')"><span class="kpi-label">Settled Refund (₹)</span><div class="kpi-val mono mono-amt" style="color:#22c55e" id="mKpiSettledAmt">₹0</div></div>
+        <div class="kpi-card" onclick="setMedQuickPreset('OVERDUE_10D')"><span class="kpi-label">Overdue (>10d)</span><div class="kpi-val mono" style="color:#ef4444" id="mKpiOverdue">0</div></div>
+        <div class="kpi-card"><span class="kpi-label">Avg Refund Speed</span><div class="kpi-val mono" style="color:#c084fc" id="mKpiSpeed">—</div></div>
+      </div>
+
+      <!-- Search + Voice Mic + Quick Pills -->
+      <div class="search-strip">
+        <div style="display:flex;gap:5px;align-items:center;flex-wrap:wrap;">
+          <div style="display:flex;flex:1;min-width:155px;align-items:center;background:var(--bg-primary);border:1px solid var(--border-color);border-radius:7px;padding-right:4px;">
+            <input type="text" id="medSearch" style="flex:1;border:none;background:transparent;color:var(--text-primary);padding:6px 8px;font-size:0.74rem;outline:none;" placeholder="🔍 Search Order ID, #No, Product, Reviewer..." oninput="applyMedFilters()" />
+            <button type="button" onclick="startMedVoiceSearch()" style="background:none;border:none;cursor:pointer;font-size:0.84rem;padding:2px 4px;" title="Voice Search">🎙️</button>
+          </div>
+          <select id="medPlatformFilter" class="select-ctrl" onchange="applyMedFilters()">
+            <option value="ALL">All Platforms</option>
+          </select>
+          <button class="btn-sm" style="padding:6px 9px;" id="medViewToggleBtn" onclick="toggleMedView()">🗂️ Cards</button>
+          <button class="btn-sm" style="padding:6px 8px;" onclick="resetMedFilters()">↺</button>
+        </div>
+
+        <div class="quick-pills">
+          <button class="q-pill active" data-preset="ALL" onclick="setMedQuickPreset('ALL', this)">All Orders</button>
+          <button class="q-pill" data-preset="PENDING_REFUND" onclick="setMedQuickPreset('PENDING_REFUND', this)">⏳ Pending Refund</button>
+          <button class="q-pill" data-preset="FORM_FILLED" onclick="setMedQuickPreset('FORM_FILLED', this)">📋 Refund Form Filled</button>
+          <button class="q-pill" data-preset="OVERDUE_10D" onclick="setMedQuickPreset('OVERDUE_10D', this)">🚨 Overdue (>10d)</button>
+          <button class="q-pill" data-preset="GOT_REFUND" onclick="setMedQuickPreset('GOT_REFUND', this)">✓ Got Refund</button>
+        </div>
+      </div>
+
+      <!-- Table -->
+      <div class="table-wrap" id="medTableWrap">
+        <table>
+          <thead id="medTableHead"></thead>
+          <tbody id="medTableBody">
+            <tr><td colspan="15" style="text-align:center;padding:30px;color:var(--text-secondary);">Loading assigned orders...</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="cards-grid" id="medCardWrap"></div>
+    </section>
+
+    <!-- =====================================================================
+         TAB 2: SELF-SERVICE BATCH MARK REFUND SENT (PASTE ORDER IDs + UTR)
+         ===================================================================== -->
+    <section id="medSettleTab" class="tab-pane">
+      <div class="form-panel">
+        <h3 style="font-size:0.96rem;margin-bottom:4px;">💸 Batch Mark Refund Sent to SanDeal Admin</h3>
+        <p style="font-size:0.73rem;color:var(--text-secondary);margin-bottom:10px;">
+          Paste the Platform Order IDs you have refunded today along with UTR/Transaction reference. SanDeal Admin will verify and mark them <strong>Got Refund</strong> in 1 click!
+        </p>
+        <div class="field" style="margin-bottom:10px;">
+          <label>1. Paste Multiple Platform Order IDs (or WhatsApp settlement text) *</label>
+          <textarea id="medClaimPasteBox" rows="4" class="mono" placeholder="Paste Order IDs here (e.g. 404-1234567-8901234)..." oninput="previewMedSettlementClaim()"></textarea>
+        </div>
+        <div class="form-grid" style="margin-bottom:10px;">
+          <div class="field">
+            <label>2. UTR / Payment Reference / Note</label>
+            <input type="text" id="medClaimUtr" placeholder="e.g. UTR 4123890123 / Paid via UPI" />
+          </div>
+          <div class="field">
+            <label>3. Refund Sent Date</label>
+            <input type="date" id="medClaimDate" />
+          </div>
+        </div>
+        <div id="medClaimPreviewArea"></div>
+      </div>
+    </section>
+
+    <!-- =====================================================================
+         TAB 3: OFFER NEW DEAL TO SANDEAL ADMIN
+         ===================================================================== -->
+    <section id="medOfferDealTab" class="tab-pane">
+      <div class="form-panel">
+        <h3 style="font-size:0.96rem;margin-bottom:4px;">🔥 Offer a New Deal Campaign to SanDeal Admin</h3>
+        <form onsubmit="submitMedDealOfferForm(event)">
+          <div class="form-grid">
+            <div class="field" style="grid-column:1/-1;"><label>Product / Deal Title *</label><input type="text" id="moTitle" placeholder="e.g. boAt Smartwatch Original Review Deal" required /></div>
+            <div class="field"><label>Platform / Deal Type *</label><input type="text" id="moPlatform" placeholder="e.g. Amazon / Amz_Rating / Flipkart" required /></div>
+            <div class="field"><label>Order Price (₹) *</label><input type="number" step="0.01" id="moPrice" required /></div>
+            <div class="field"><label>Mediator Less / Commission (₹) *</label><input type="number" step="0.01" id="moLess" placeholder="-100 or +50" required /></div>
+            <div class="field"><label>Product Link</label><input type="url" id="moUrl" placeholder="https://..." /></div>
+          </div>
+          <button type="submit" style="margin-top:12px;width:100%;padding:10px;border-radius:8px;border:none;background:#a855f7;color:#fff;font-weight:800;cursor:pointer;">
+            🚀 Send Deal Offer to SanDeal Admin
+          </button>
+        </form>
+      </div>
+    </section>
+
+    <!-- =====================================================================
+         TAB 4: CONTACT ADMIN
+         ===================================================================== -->
+    <section id="medQueryTab" class="tab-pane">
+      <div class="form-panel">
+        <h3 style="font-size:0.96rem;margin-bottom:8px;">📩 Send Message / Query to SanDeal Admin</h3>
+        <form onsubmit="submitMedQuery(event)">
+          <div class="field" style="margin-bottom:10px;"><label>Order Reference (Optional)</label><input type="text" id="mqOrderId" class="mono" placeholder="e.g. #1217 or 404-xxxxxxx" /></div>
+          <div class="field" style="margin-bottom:12px;"><label>Message *</label><textarea id="mqMessage" rows="4" required></textarea></div>
+          <div style="display:flex;gap:8px;">
+            <button type="submit" style="flex:1;padding:10px;border-radius:8px;border:none;background:#a855f7;color:#fff;font-weight:800;cursor:pointer;">📨 Send Ticket</button>
+            <button type="button" onclick="contactSanDealAdminWa()" style="flex:1;padding:10px;border-radius:8px;border:1px solid #22c55e;background:rgba(34,197,94,0.15);color:#22c55e;font-weight:800;cursor:pointer;">🟢 WhatsApp Admin</button>
+          </div>
+        </form>
+      </div>
+    </section>
+  </main>
+
+  <!-- Add / Edit Mediator Note Modal -->
+  <div class="modal-backdrop" id="medNoteModal">
+    <div class="modal-box" style="max-width:400px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+        <h3 style="font-size:0.92rem;" id="mnTitle">📝 Add Note for Order</h3>
+        <button onclick="document.getElementById('medNoteModal').classList.remove('open')" style="background:none;border:none;color:var(--text-secondary);font-size:1.1rem;cursor:pointer;">✕</button>
+      </div>
+      <form onsubmit="submitMedNoteForm(event)">
+        <input type="hidden" id="mnOrderNo" />
+        <div class="field" style="margin-bottom:12px;">
+          <label>Remark / Note (Visible to SanDeal Admin)</label>
+          <textarea id="mnNotesInput" rows="3" placeholder="e.g. Refund processed in batch 2..."></textarea>
+        </div>
+        <button type="submit" style="width:100%;padding:9px;border-radius:8px;border:none;background:#a855f7;color:#fff;font-weight:800;cursor:pointer;">💾 Save Note</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Mediator Column Freeze & Visibility Modal -->
+  <div class="modal-backdrop" id="medColModal">
+    <div class="modal-box" style="max-width:400px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+        <h3 style="font-size:0.92rem;">📌 Freeze & Customize Columns</h3>
+        <button onclick="document.getElementById('medColModal').classList.remove('open')" style="background:none;border:none;color:var(--text-secondary);font-size:1.1rem;cursor:pointer;">✕</button>
+      </div>
+      <div class="field" style="margin-bottom:12px;">
+        <label>Freeze 2nd Column (Alongside #OrderNo)</label>
+        <select id="medFreezeSecondSelect" onchange="saveMedColConfig()">
+          <option value="NONE">Only Freeze #OrderNo</option>
+          <option value="platformOrderId">Freeze #OrderNo + Order ID</option>
+          <option value="productName">Freeze #OrderNo + Product</option>
+        </select>
+      </div>
+      <div id="medColChecksWrap" style="display:grid;grid-template-columns:repeat(2,1fr);gap:6px;margin-bottom:12px;"></div>
+      <button class="btn-sm" style="width:100%;justify-content:center;padding:8px;background:#a855f7;color:#fff;border:none;font-weight:800;" onclick="document.getElementById('medColModal').classList.remove('open')">✓ Done</button>
+    </div>
+  </div>
+  <script>
+    const SANDEAL_FOOTER = '✨ *Thanks for your trust with SanDeal ♥️. Keep Partnering ☺️*';
+    const medUser = SD.requireAuth('mediator');
+
+    let medOrders = [];
+    let filteredMedOrders = [];
+    let matchedClaimOrderNos = [];
+    let matchedClaimTotalAmt = 0;
+    let medCurrentView = 'table';
+    let medSortField = 'orderNo';
+    let medSortAsc = false;
+    let medActivePreset = 'ALL';
+
+    const MED_DEFAULT_COL_CONFIG = {
+      freezeSecond: 'platformOrderId',
+      cols: {
+        orderDate:       { label: 'Order Date',  show: true },
+        platformOrderId: { label: 'Order ID',    show: true },
+        productName:     { label: 'Product',     show: true },
+        accountName:     { label: 'Reviewer',    show: true },
+        orderedPlatform: { label: 'Platform/Type', show: true },
+        sellerName:      { label: 'Seller',      show: false },
+        pricePaid:       { label: 'Price',       show: true },
+        less:            { label: 'Med Less',    show: true },
+        toGet:           { label: 'ToGet',       show: true },
+        actualGot:       { label: 'ActualGot',   show: true },
+        refundFormDate:  { label: 'Form Date',   show: true },
+        refundDate:      { label: 'Refund Date', show: true },
+        orderStatus:     { label: 'Status/SLA',  show: true }
+      }
+    };
+
+    let medColCfg = loadMedColConfig();
+
+    function loadMedColConfig() {
+      try {
+        const raw = localStorage.getItem('sandeal_med_col_cfg_v7');
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          return {
+            freezeSecond: parsed.freezeSecond || 'platformOrderId',
+            cols: Object.assign({}, MED_DEFAULT_COL_CONFIG.cols, parsed.cols || {})
+          };
+        }
+      } catch (e) {}
+      return JSON.parse(JSON.stringify(MED_DEFAULT_COL_CONFIG));
+    }
+
+    function openMedColModal() {
+      document.getElementById('medFreezeSecondSelect').value = medColCfg.freezeSecond || 'platformOrderId';
+      const wrap = document.getElementById('medColChecksWrap');
+      wrap.innerHTML = Object.keys(MED_DEFAULT_COL_CONFIG.cols).map(k => {
+        const c = medColCfg.cols[k] || MED_DEFAULT_COL_CONFIG.cols[k];
+        return `
+          <label style="display:flex;align-items:center;gap:5px;padding:6px 8px;background:var(--bg-primary);border:1px solid var(--border-color);border-radius:6px;font-size:0.68rem;cursor:pointer;">
+            <input type="checkbox" data-colkey="${k}" ${c.show ? 'checked' : ''} onchange="saveMedColConfig()" />
+            <span>${SD.escapeHtml(MED_DEFAULT_COL_CONFIG.cols[k].label)}</span>
+          </label>
+        `;
+      }).join('');
+      document.getElementById('medColModal').classList.add('open');
+    }
+
+    function saveMedColConfig() {
+      medColCfg.freezeSecond = document.getElementById('medFreezeSecondSelect').value || 'platformOrderId';
+      document.querySelectorAll('#medColChecksWrap input[data-colkey]').forEach(cb => {
+        const k = cb.getAttribute('data-colkey');
+        if (medColCfg.cols[k]) medColCfg.cols[k].show = cb.checked;
+      });
+      localStorage.setItem('sandeal_med_col_cfg_v7', JSON.stringify(medColCfg));
+      renderMedOrders();
+    }
+
+    // ─── LOADER, SHORT DATES & DRIVE IMAGE ZOOM ─────────────────────────────
+
+    function showMedLoader(title = 'Processing...', sub = 'Syncing with SanDeal') {
+      document.getElementById('medLoaderTitle').textContent = title;
+      document.getElementById('medLoaderSub').textContent = sub;
+      document.getElementById('medLoaderOverlay').classList.add('open');
+    }
+    function hideMedLoader() {
+      document.getElementById('medLoaderOverlay').classList.remove('open');
+    }
+
+    function fmtDDMM(isoStr) {
+      if (!isoStr || isoStr.length < 10) return '';
+      return `${isoStr.slice(8, 10)}/${isoStr.slice(5, 7)}`;
+    }
+
+    function fmtDDMMYY(isoStr) {
+      if (!isoStr || isoStr.length < 10) return '';
+      return `${isoStr.slice(8, 10)}/${isoStr.slice(5, 7)}/${isoStr.slice(2, 4)}`;
+    }
+
+    function resolveMedDriveImg(url) {
+      if (!url) return '';
+      const str = String(url).trim();
+      if (str.startsWith('data:image')) return str;
+      const m1 = str.match(/[?&]id=([a-zA-Z0-9_-]{15,})/);
+      const m2 = str.match(/\/file\/d\/([a-zA-Z0-9_-]{15,})/);
+      const fileId = (m1 && m1[1]) || (m2 && m2[1]);
+      if (fileId) return `https://drive.google.com/thumbnail?id=${fileId}&sz=w1000`;
+      return str;
+    }
+
+    function openMedZoom(srcUrl, caption = '') {
+      const fixed = resolveMedDriveImg(srcUrl);
+      if (!fixed) return;
+      document.getElementById('medZoomImg').src = fixed;
+      document.getElementById('medZoomCaption').textContent = caption || 'Tap anywhere to close';
+      document.getElementById('medImageZoomModal').classList.add('open');
+    }
+
+    // ─── MULTI-WHATSAPP CHOOSER FOR MEDIATOR ────────────────────────────────
+
+    let pendingMedWaPhone = '';
+    let pendingMedWaText = '';
+
+    function openMedSmartWhatsApp(phone, text) {
+      let clean = String(phone || '').replace(/\D/g, '');
+      if (clean.length === 10) clean = '91' + clean;
+      pendingMedWaPhone = clean;
+      pendingMedWaText = String(text || '');
+      document.getElementById('medWaPreviewBox').value = pendingMedWaText;
+      document.getElementById('medWaChooserModal').classList.add('open');
+    }
+
+    async function launchMedWa(mode) {
+      const ph = pendingMedWaPhone;
+      const finalMsg = document.getElementById('medWaPreviewBox').value || pendingMedWaText;
+      const encText = encodeURIComponent(finalMsg);
+      document.getElementById('medWaChooserModal').classList.remove('open');
+
+      if (mode === 'system_share') {
+        SD.copyText(finalMsg, 'Message');
+        if (navigator.share) {
+          try { await navigator.share({ text: finalMsg }); return; } catch (e) {}
+        }
+        window.open(`whatsapp://send?${ph ? 'phone=' + ph + '&' : ''}text=${encText}`, '_blank');
+        return;
+      }
+      if (mode === 'normal') {
+        const isAndroid = /Android/i.test(navigator.userAgent);
+        if (isAndroid) {
+          window.location.href = `intent://send?${ph ? 'phone=' + ph + '&' : ''}text=${encText}#Intent;scheme=whatsapp;package=com.whatsapp;end`;
+        } else {
+          window.location.href = `whatsapp://send?${ph ? 'phone=' + ph + '&' : ''}text=${encText}`;
+        }
+        return;
+      }
+      if (mode === 'business') {
+        const isAndroid = /Android/i.test(navigator.userAgent);
+        if (isAndroid) {
+          window.location.href = `intent://send?${ph ? 'phone=' + ph + '&' : ''}text=${encText}#Intent;scheme=whatsapp;package=com.whatsapp.w4b;end`;
+        } else {
+          window.open(`https://api.whatsapp.com/send?${ph ? 'phone=' + ph + '&' : ''}text=${encText}`, '_blank');
+        }
+        return;
+      }
+      SD.copyText(finalMsg, 'WhatsApp Message');
+      window.open(`https://wa.me/${ph}?text=${encText}`, '_blank');
+    }
+
+    function startMedVoiceSearch() {
+      const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SpeechRec) { SD.toast('Voice search supported on Chrome/Android', 'warning'); return; }
+      const rec = new SpeechRec();
+      rec.lang = 'en-IN';
+      SD.toast('🎙️ Listening... Speak Order ID, Reviewer or Product', 'info', 2200);
+      rec.onresult = e => {
+        const txt = e.results[0][0].transcript || '';
+        document.getElementById('medSearch').value = txt.trim();
+        applyMedFilters();
+      };
+      rec.start();
+    }
+
+    function switchMedTab(tabId) {
+      document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+      document.querySelectorAll('.dash-tab').forEach(b => {
+        b.classList.toggle('active', b.dataset.tab === tabId);
+      });
+      const target = document.getElementById(tabId);
+      if (target) target.classList.add('active');
+    }
+
+    function toggleMedDrawer(open) {
+      document.getElementById('medDrawerBackdrop').classList.toggle('open', open);
+      document.getElementById('medSideDrawer').classList.toggle('open', open);
+    }
+
+    function toggleMedPrivacy() {
+      const isBlurred = document.body.classList.toggle('privacy-blur');
+      document.getElementById('medPrivBtn').textContent = isBlurred ? '🙈' : '👁️';
+      SD.toast(isBlurred ? 'Privacy Mode ON' : 'Privacy Mode OFF', 'info', 1600);
+    }
+
+    // ─── RENDER MEDIATOR DASHBOARD PAYLOAD ──────────────────────────────────
+
+    function renderMediatorPayload(data) {
+      if (!data || !data.success) return;
+
+      const u = data.user || medUser;
+      const name = u.name || 'Mediator';
+      const initials = name.slice(0, 2).toUpperCase();
+
+      document.getElementById('medNavInitials').textContent = initials;
+      document.getElementById('medGreetInitials').textContent = initials;
+      document.getElementById('medNavShortName').textContent = name.split(' ')[0];
+      document.getElementById('drawerMedName').textContent = name;
+      document.getElementById('medGreetingTitle').textContent = `Welcome, ${name}! 🤝`;
+
+      medOrders = data.orders || [];
+
+      // Single-Line Scrolling Marquee Ticker
+      const highlights = data.highlights || [];
+      const mBar = document.getElementById('medTopMarquee');
+      const mTxt = document.getElementById('medMarqueeText');
+      if (highlights.length > 0) {
+        mTxt.textContent = highlights.map(h => `★ ${h.title}: ${h.message} (${h.date})`).join('   •   ');
+        mBar.classList.add('show');
+      } else {
+        mBar.classList.remove('show');
+      }
+
+      const plats = Array.from(new Set(medOrders.map(o => o.orderedPlatform).filter(Boolean))).sort();
+      const currPlat = document.getElementById('medPlatformFilter').value || 'ALL';
+      document.getElementById('medPlatformFilter').innerHTML = `<option value="ALL">All Platforms (${plats.length})</option>` +
+        plats.map(p => `<option value="${SD.escapeHtml(p)}">${SD.escapeHtml(p)}</option>`).join('');
+      document.getElementById('medPlatformFilter').value = currPlat;
+
+      applyMedFilters();
+    }
+
+    function computeMedSlaTimeline(o) {
+      const lowSt = String(o.orderStatus || '').toLowerCase();
+      const isRefunded = lowSt === 'got refund';
+      const isCancelled = lowSt.includes('cancel');
+
+      const orderAgeDays = o.orderDate ? SD.daysBetween(o.orderDate) : null;
+      const formAgeDays  = o.refundFormDate ? SD.daysBetween(o.refundFormDate, isRefunded && o.refundDate ? o.refundDate : null) : null;
+
+      let blinkHtml = '';
+      let isOverdue10d = false;
+      if (!isRefunded && !isCancelled && o.refundFormDate && formAgeDays !== null && formAgeDays > 10) {
+        isOverdue10d = true;
+        blinkHtml = `<span class="blink-badge red">🚨 Overdue ${formAgeDays}d!</span>`;
+      }
+
+      const inlineOrdDate = o.orderDate
+        ? `📅 ${fmtDDMMYY(o.orderDate)}${orderAgeDays !== null ? ` (${orderAgeDays}d)` : ''}`
+        : '';
+
+      const chips = [];
+      if (o.deliveryDate) chips.push(`PR:${fmtDDMM(o.deliveryDate)}`);
+      if (o.reviewDate || o.reviewLiveDate) {
+        const rDt = o.reviewLiveDate || o.reviewDate;
+        chips.push(`Rev:${fmtDDMM(rDt)}`);
+      }
+      if (o.refundFormDate) {
+        chips.push(`FF:${fmtDDMMYY(o.refundFormDate)}${!isRefunded && formAgeDays !== null ? ` (${formAgeDays}d ago)` : ''}`);
+      }
+      if (isRefunded && o.refundDate) {
+        const took = o.refundFormDate ? SD.daysBetween(o.refundFormDate, o.refundDate) : null;
+        chips.push(`<strong style="color:#22c55e;">⚡RD:${fmtDDMMYY(o.refundDate)}${took !== null ? ` (in ${took}d)` : ''}</strong>`);
+      }
+
+      return {
+        orderAgeDays,
+        formAgeDays,
+        isOverdue10d,
+        inlineOrdDate,
+        blinkHtml,
+        stageLineHtml: chips.join(' • ')
+      };
+    }
+
+    function setMedQuickPreset(preset, btnEl) {
+      medActivePreset = preset;
+      document.querySelectorAll('.q-pill').forEach(b => {
+        b.classList.toggle('active', b === btnEl || b.dataset.preset === preset);
+      });
+      applyMedFilters();
+    }
+
+    function resetMedFilters() {
+      document.getElementById('medSearch').value = '';
+      document.getElementById('medPlatformFilter').value = 'ALL';
+      setMedQuickPreset('ALL');
+    }
+
+    function applyMedFilters() {
+      const q = document.getElementById('medSearch').value.trim().toLowerCase();
+      const platVal = document.getElementById('medPlatformFilter').value;
+
+      filteredMedOrders = medOrders.filter(o => {
+        const lowSt = String(o.orderStatus || '').toLowerCase();
+        const sla = computeMedSlaTimeline(o);
+
+        if (platVal !== 'ALL' && String(o.orderedPlatform || '').toLowerCase() !== platVal.toLowerCase()) return false;
+        if (medActivePreset === 'PENDING_REFUND' && (lowSt === 'got refund' || lowSt.includes('cancel'))) return false;
+        if (medActivePreset === 'FORM_FILLED' && lowSt !== 'refund form filled') return false;
+        if (medActivePreset === 'OVERDUE_10D' && !sla.isOverdue10d) return false;
+        if (medActivePreset === 'GOT_REFUND' && lowSt !== 'got refund') return false;
+
+        if (q) {
+          const hay = `${o.orderNo} ${o.platformOrderId} ${o.productName} ${o.accountName} ${o.orderedPlatform} ${o.sellerName} ${o.notes}`.toLowerCase();
+          if (!hay.includes(q)) return false;
+        }
+        return true;
+      });
+
+      filteredMedOrders.sort((a, b) => {
+        let vA = a[medSortField], vB = b[medSortField];
+        if (['orderNo', 'pricePaid', 'less', 'toGet', 'actualGot'].includes(medSortField)) {
+          vA = Number(vA) || 0; vB = Number(vB) || 0;
+        } else {
+          vA = String(vA || '').toLowerCase(); vB = String(vB || '').toLowerCase();
+        }
+        if (vA < vB) return medSortAsc ? -1 : 1;
+        if (vA > vB) return medSortAsc ? 1 : -1;
+        return 0;
+      });
+
+      updateMedPassbookKPIs(medOrders);
+      renderMedOrders();
+    }
+
+    function updateMedPassbookKPIs(allList) {
+      let formFilledCnt = 0, pendingAmt = 0, settledAmt = 0, overdueCnt = 0;
+      let speedDaysSum = 0, speedDaysCnt = 0;
+
+      allList.forEach(o => {
+        const lowSt = String(o.orderStatus || '').toLowerCase();
+        const isRefunded = lowSt === 'got refund';
+        const isCancelled = lowSt.includes('cancel');
+        const sla = computeMedSlaTimeline(o);
+
+        if (lowSt === 'refund form filled') formFilledCnt++;
+        if (sla.isOverdue10d) overdueCnt++;
+
+        if (isRefunded) {
+          settledAmt += (o.actualGot !== null ? Number(o.actualGot) : Number(o.toGet)) || 0;
+          if (o.refundFormDate && o.refundDate) {
+            const d = SD.daysBetween(o.refundFormDate, o.refundDate);
+            if (d !== null && d >= 0 && d < 120) { speedDaysSum += d; speedDaysCnt++; }
+          }
+        } else if (!isCancelled) {
+          pendingAmt += Number(o.toGet) || 0;
+        }
+      });
+
+      const avgSpeed = speedDaysCnt ? `⚡ ~${Math.round(speedDaysSum / speedDaysCnt)}d` : '—';
+      document.getElementById('mKpiTotal').textContent = allList.length.toLocaleString('en-IN');
+      document.getElementById('mKpiFormFilled').textContent = formFilledCnt.toLocaleString('en-IN');
+      document.getElementById('mKpiPendingAmt').textContent = SD.formatCurrency(pendingAmt);
+      document.getElementById('mKpiSettledAmt').textContent = SD.formatCurrency(settledAmt);
+      document.getElementById('mKpiOverdue').textContent = overdueCnt.toLocaleString('en-IN');
+      document.getElementById('mKpiSpeed').textContent = avgSpeed;
+      document.getElementById('medGreetingSub').textContent = `${allList.length} Total Orders • Pending ToGet: ${SD.formatCurrency(pendingAmt)}`;
+    }
+
+    function sortMedTable(field) {
+      if (medSortField === field) medSortAsc = !medSortAsc;
+      else { medSortField = field; medSortAsc = true; }
+      applyMedFilters();
+    }
+
+    function renderMedOrders() {
+      const thead = document.getElementById('medTableHead');
+      const tbody = document.getElementById('medTableBody');
+      const cardWrap = document.getElementById('medCardWrap');
+
+      const cCfg = medColCfg.cols;
+      const fz2 = medColCfg.freezeSecond || 'platformOrderId';
+      const fzClass = key => (fz2 === key ? 'sticky-col-2' : '');
+
+      thead.innerHTML = `
+        <tr>
+          <th class="sticky-col-1" onclick="sortMedTable('orderNo')"># ↕</th>
+          ${cCfg.platformOrderId?.show ? `<th class="${fzClass('platformOrderId')}" onclick="sortMedTable('platformOrderId')">Order ID ↕</th>` : ''}
+          ${cCfg.productName?.show ? `<th class="${fzClass('productName')}" onclick="sortMedTable('productName')">Product ↕</th>` : ''}
+          ${cCfg.accountName?.show ? `<th onclick="sortMedTable('accountName')">Reviewer ↕</th>` : ''}
+          ${cCfg.orderedPlatform?.show ? `<th onclick="sortMedTable('orderedPlatform')">Platform/Type ↕</th>` : ''}
+          ${cCfg.sellerName?.show ? `<th onclick="sortMedTable('sellerName')">Seller ↕</th>` : ''}
+          ${cCfg.orderDate?.show ? `<th onclick="sortMedTable('orderDate')">Ord Date ↕</th>` : ''}
+          ${cCfg.pricePaid?.show ? `<th onclick="sortMedTable('pricePaid')">Price ↕</th>` : ''}
+          ${cCfg.less?.show ? `<th onclick="sortMedTable('less')">Med Less ↕</th>` : ''}
+          ${cCfg.toGet?.show ? `<th onclick="sortMedTable('toGet')">ToGet ↕</th>` : ''}
+          ${cCfg.actualGot?.show ? `<th onclick="sortMedTable('actualGot')">ActualGot ↕</th>` : ''}
+          ${cCfg.refundFormDate?.show ? `<th onclick="sortMedTable('refundFormDate')">Form Date ↕</th>` : ''}
+          ${cCfg.refundDate?.show ? `<th onclick="sortMedTable('refundDate')">Refund Date ↕</th>` : ''}
+          ${cCfg.orderStatus?.show ? `<th onclick="sortMedTable('orderStatus')">Status / SLA ↕</th>` : ''}
+          <th>Proof & Actions</th>
+        </tr>
+      `;
+
+      if (!filteredMedOrders.length) {
+        tbody.innerHTML = `<tr><td colspan="15" style="text-align:center;padding:30px;color:var(--text-secondary);">No matching orders found.</td></tr>`;
+        cardWrap.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:30px;color:var(--text-secondary);">No matching orders found.</div>`;
+        return;
+      }
+
+      tbody.innerHTML = filteredMedOrders.map(o => {
+        const sla = computeMedSlaTimeline(o);
+        const safeProd = SD.escapeHtml(o.productName).replace(/'/g, "\\'");
+        const formSub = sla.formAgeDays !== null ? `<div style="font-size:0.56rem;color:var(--text-muted);">${sla.formAgeDays}d ago</div>` : '';
+
+        return `
+          <tr>
+            <td class="sticky-col-1 mono" style="font-weight:800;color:#c084fc;">#${o.orderNo}</td>
+            ${cCfg.platformOrderId?.show ? `
+              <td class="${fzClass('platformOrderId')} mono" onclick="SD.copyText('${SD.escapeHtml(o.platformOrderId)}','Order ID')" style="cursor:pointer;">
+                ${SD.escapeHtml(o.platformOrderId)} 📋
+              </td>` : ''}
+            ${cCfg.productName?.show ? `
+              <td class="${fzClass('productName')}" style="max-width:160px;">
+                <div style="display:flex;align-items:center;gap:4px;">
+                  <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:128px;" title="${SD.escapeHtml(o.productName)}">${SD.escapeHtml(o.productName)}</span>
+                  <span class="copy-chip" onclick="SD.copyText('${safeProd}','Product Name')">📋</span>
+                </div>
+              </td>` : ''}
+            ${cCfg.accountName?.show ? `<td style="color:var(--cyan);font-weight:600;">${SD.escapeHtml(o.accountName)}</td>` : ''}
+            ${cCfg.orderedPlatform?.show ? `<td><span class="mono" style="font-size:0.62rem;padding:2px 6px;border-radius:5px;background:rgba(168,85,247,0.16);color:#c084fc;font-weight:700;">🏷️ ${SD.escapeHtml(o.orderedPlatform)}</span></td>` : ''}
+            ${cCfg.sellerName?.show ? `<td>${SD.escapeHtml(o.sellerName || '—')}</td>` : ''}
+            ${cCfg.orderDate?.show ? `<td class="mono">${fmtDDMMYY(o.orderDate)}</td>` : ''}
+            ${cCfg.pricePaid?.show ? `<td class="mono mono-amt">${SD.formatCurrency(o.pricePaid)}</td>` : ''}
+            ${cCfg.less?.show ? `<td class="mono mono-amt" style="color:#f59e0b;font-weight:700;">${SD.formatCurrency(o.less)}</td>` : ''}
+            ${cCfg.toGet?.show ? `<td class="mono mono-amt" style="color:#22c55e;font-weight:700;">${SD.formatCurrency(o.toGet)}</td>` : ''}
+            ${cCfg.actualGot?.show ? `<td class="mono-amt">${SD.formatActualGotHtml(o.actualGot, o.toGet)}</td>` : ''}
+            ${cCfg.refundFormDate?.show ? `<td class="mono" style="line-height:1.15;"><div>${fmtDDMMYY(o.refundFormDate) || '—'}</div>${formSub}</td>` : ''}
+            ${cCfg.refundDate?.show ? `<td class="mono">${fmtDDMMYY(o.refundDate) || '—'}</td>` : ''}
+            ${cCfg.orderStatus?.show ? `
+              <td>
+                <div style="display:flex;flex-direction:column;gap:2px;align-items:flex-start;">
+                  ${SD.statusBadge(o.orderStatus)}
+                  ${sla.blinkHtml}
+                </div>
+              </td>` : ''}
+            <td>
+              ${o.orderScreenshot ? `<button class="btn-sm" onclick="openMedZoom('${SD.escapeHtml(o.orderScreenshot)}','Order #${o.orderNo} Screenshot')" title="View Screenshot">🖼️</button>` : ''}
+              ${o.reviewLink ? `<a href="${SD.escapeHtml(o.reviewLink)}" target="_blank" class="btn-sm" style="text-decoration:none;" title="Open Review Link">⭐</a>` : ''}
+              <button class="btn-sm" onclick="openMedNoteModal(${o.orderNo})" title="Add Note">📝</button>
+              <button class="wa-btn" onclick="waMedOrderToAdmin(${o.orderNo})" title="WhatsApp Admin">💬</button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+      cardWrap.innerHTML = filteredMedOrders.map(o => {
+        const sla = computeMedSlaTimeline(o);
+        const safeProd = SD.escapeHtml(o.productName).replace(/'/g, "\\'");
+
+        return `
+          <div class="order-card">
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:5px;flex-wrap:wrap;">
+              <div style="display:flex;align-items:center;gap:5px;">
+                <span class="mono" style="font-weight:800;color:#c084fc;font-size:0.8rem;">#${o.orderNo}</span>
+                <span class="copy-chip mono" onclick="SD.copyText('${SD.escapeHtml(o.platformOrderId)}','Order ID')">
+                  ${SD.escapeHtml(o.platformOrderId)} 📋
+                </span>
+              </div>
+              <div style="display:flex;align-items:center;gap:4px;">
+                ${sla.blinkHtml}
+                ${SD.statusBadge(o.orderStatus)}
+              </div>
+            </div>
+
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:6px;">
+              <div style="font-weight:700;font-size:0.78rem;line-height:1.25;">${SD.escapeHtml(o.productName)}</div>
+              <span class="copy-chip" onclick="SD.copyText('${safeProd}','Product Name')">📋 Copy</span>
+            </div>
+
+            <div style="display:flex;justify-content:space-between;align-items:center;font-size:0.7rem;flex-wrap:wrap;gap:4px;">
+              <span style="color:var(--cyan);font-weight:700;">🧑 Reviewer: ${SD.escapeHtml(o.accountName)}</span>
+              <span class="mono" style="color:var(--accent);font-size:0.65rem;font-weight:700;">${sla.inlineOrdDate}</span>
+            </div>
+
+            ${sla.stageLineHtml ? `
+              <div class="mono" style="font-size:0.63rem;color:var(--text-secondary);background:rgba(255,255,255,0.03);padding:3px 7px;border-radius:5px;white-space:nowrap;overflow-x:auto;">
+                ${sla.stageLineHtml}
+              </div>
+            ` : ''}
+
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:4px;background:var(--bg-primary);padding:5px;border-radius:7px;text-align:center;font-size:0.71rem;">
+              <div><small style="color:var(--text-muted);font-size:0.55rem;display:block;">Price Paid</small><strong class="mono mono-amt">${SD.formatCurrency(o.pricePaid)}</strong></div>
+              <div><small style="color:#f59e0b;font-size:0.55rem;display:block;">Med Less</small><strong class="mono mono-amt" style="color:#f59e0b">${SD.formatCurrency(o.less)}</strong></div>
+              <div><small style="color:#22c55e;font-size:0.55rem;display:block;">ToGet / Got</small><strong class="mono mono-amt" style="color:#22c55e">${SD.formatCurrency(o.toGet)}</strong><span class="mono" style="font-size:0.6rem;">/${o.actualGot !== null ? SD.formatCurrency(o.actualGot) : '—'}</span></div>
+            </div>
+
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:6px;flex-wrap:wrap;">
+              <span class="mono" style="font-size:0.62rem;font-weight:800;padding:2px 7px;border-radius:6px;background:rgba(168,85,247,0.16);color:#c084fc;">
+                🏷️ ${SD.escapeHtml(o.orderedPlatform || 'Amazon')}
+              </span>
+              <div style="display:flex;gap:4px;">
+                ${o.orderScreenshot ? `<button class="btn-sm" onclick="openMedZoom('${SD.escapeHtml(o.orderScreenshot)}','Order #${o.orderNo} Screenshot')">🖼️ SS</button>` : ''}
+                ${o.reviewLink ? `<a href="${SD.escapeHtml(o.reviewLink)}" target="_blank" class="btn-sm" style="text-decoration:none;">⭐ Review</a>` : ''}
+                <button class="btn-sm" onclick="openMedNoteModal(${o.orderNo})">📝 Note</button>
+                <button class="wa-btn" onclick="waMedOrderToAdmin(${o.orderNo})">🟢 💬</button>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function toggleMedView() {
+      const btn = document.getElementById('medViewToggleBtn');
+      const tbl = document.getElementById('medTableWrap');
+      const crd = document.getElementById('medCardWrap');
+      if (medCurrentView === 'table') {
+        medCurrentView = 'card'; tbl.style.display = 'none'; crd.style.display = 'grid'; btn.textContent = '📋 Table';
+      } else {
+        medCurrentView = 'table'; tbl.style.display = 'block'; crd.style.display = 'none'; btn.textContent = '🗂️ Cards';
+      }
+    }
+
+    // ─── SELF-SERVICE BATCH MARK REFUND SENT ────────────────────────────────
+
+    function previewMedSettlementClaim() {
+      const raw = document.getElementById('medClaimPasteBox').value.trim();
+      const area = document.getElementById('medClaimPreviewArea');
+      if (!raw) { area.innerHTML = ''; matchedClaimOrderNos = []; matchedClaimTotalAmt = 0; return; }
+
+      const lowRaw = raw.toLowerCase();
+      const matched = medOrders.filter(o =>
+        o.platformOrderId && o.platformOrderId.length >= 6 && lowRaw.includes(o.platformOrderId.toLowerCase())
+      );
+
+      matchedClaimOrderNos = matched.map(o => o.orderNo);
+      matchedClaimTotalAmt = matched.reduce((acc, o) => acc + (Number(o.toGet) || 0), 0);
+
+      if (!matched.length) {
+        area.innerHTML = `<div style="font-size:0.75rem;color:#ef4444;">No matching PlatformOrderIDs found in your assigned orders.</div>`;
+        return;
+      }
+
+      area.innerHTML = `
+        <div style="background:var(--bg-primary);border:1px solid #22c55e;border-radius:10px;padding:12px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:8px;">
+            <div>
+              <strong style="color:#22c55e;font-size:0.86rem;">✓ Matched ${matched.length} Order(s)</strong>
+              <span class="mono" style="font-size:0.86rem;margin-left:8px;">Total Refund: <strong>${SD.formatCurrency(matchedClaimTotalAmt)}</strong></span>
+            </div>
+            <button type="button" class="wa-btn" style="padding:8px 14px;font-size:0.78rem;" onclick="submitMedBatchClaimToAdmin()">
+              🚀 Submit Refund Claim to Admin
+            </button>
+          </div>
+          <div style="font-size:0.72rem;color:var(--text-secondary);">
+            ${matched.map(o => `#${o.orderNo} (${o.platformOrderId} → ₹${o.toGet})`).join(' • ')}
+          </div>
+        </div>
+      `;
+    }
+
+    async function submitMedBatchClaimToAdmin() {
+      if (!matchedClaimOrderNos.length) return;
+      const utr = document.getElementById('medClaimUtr').value.trim();
+      const dt = document.getElementById('medClaimDate').value || new Date().toISOString().slice(0, 10);
+
+      showMedLoader('Submitting Claim...', 'Notifying SanDeal Admin of your batch settlement');
+      const res = await SD.api('submitMediatorSettlementClaim', {
+        orderNos: matchedClaimOrderNos,
+        totalAmount: matchedClaimTotalAmt,
+        utr: utr,
+        refundDate: dt
+      });
+      hideMedLoader();
+
+      if (res?.success) {
+        SD.toast(res.message, 'success', 5000);
+        document.getElementById('medClaimPasteBox').value = '';
+        document.getElementById('medClaimUtr').value = '';
+        document.getElementById('medClaimPreviewArea').innerHTML = '';
+      } else {
+        SD.toast(res?.error || 'Could not submit claim', 'error');
+      }
+    }
+
+    // ─── OFFER NEW DEAL, NOTES & WHATSAPP ───────────────────────────────────
+
+    async function submitMedDealOfferForm(e) {
+      e.preventDefault();
+      showMedLoader('Sending Deal Offer...', 'Notifying SanDeal Admin');
+      const res = await SD.api('submitMediatorDealOffer', {
+        title: document.getElementById('moTitle').value.trim(),
+        platform: document.getElementById('moPlatform').value.trim(),
+        price: document.getElementById('moPrice').value,
+        lessAmount: document.getElementById('moLess').value,
+        productUrl: document.getElementById('moUrl').value.trim()
+      });
+      hideMedLoader();
+      if (res?.success) {
+        SD.toast(res.message, 'success');
+        e.target.reset();
+      } else {
+        SD.toast(res?.error || 'Failed to send deal offer', 'error');
+      }
+    }
+
+    function openMedNoteModal(orderNo) {
+      const o = medOrders.find(x => String(x.orderNo) === String(orderNo));
+      if (!o) return;
+      document.getElementById('mnTitle').textContent = `📝 Note for Order #${o.orderNo}`;
+      document.getElementById('mnOrderNo').value = o.orderNo;
+      document.getElementById('mnNotesInput').value = o.notes || '';
+      document.getElementById('medNoteModal').classList.add('open');
+    }
+
+    async function submitMedNoteForm(e) {
+      e.preventDefault();
+      const orderNo = document.getElementById('mnOrderNo').value;
+      const notes = document.getElementById('mnNotesInput').value.trim();
+      const target = medOrders.find(x => String(x.orderNo) === String(orderNo));
+      if (target) target.notes = notes;
+      document.getElementById('medNoteModal').classList.remove('open');
+      renderMedOrders();
+
+      const res = await SD.api('updateMediatorNote', { orderNo, notes });
+      if (res?.success) SD.toast(res.message, 'success');
+    }
+
+    function waMedOrderToAdmin(orderNo) {
+      const o = medOrders.find(x => String(x.orderNo) === String(orderNo));
+      if (!o) return;
+      const msg = [
+        `🤝 *SanDeal Mediator Update (${medUser.name})*`,
+        `🔢 *Order No:* #${o.orderNo}`,
+        `🆔 *Order ID:* *${o.platformOrderId}*`,
+        `📦 *Product:* ${o.productName}`,
+        `🧑 *Reviewer:* ${o.accountName}`,
+        `💵 *Price:* ₹${o.pricePaid} | *Less:* ₹${o.less}`,
+        `💰 *Refund ToGet:* ₹${o.toGet}`,
+        `📊 *Current Status:* ${o.orderStatus}`,
+        o.notes ? `📝 *Note:* ${o.notes}` : ''
+      ].filter(Boolean).join('\n');
+      openMedSmartWhatsApp('917004984949', msg);
+    }
+
+    function contactSanDealAdminWa() {
+      const msg = `🤝 *Hi SanDeal Admin*\nMediator: ${medUser.name}\n\nRegarding my assigned mediator orders / settlements:`;
+      openMedSmartWhatsApp('917004984949', msg);
+    }
+
+    async function submitMedQuery(e) {
+      e.preventDefault();
+      showMedLoader('Sending Message...');
+      const res = await SD.api('submitQuery', {
+        orderId: document.getElementById('mqOrderId').value.trim() || 'Mediator General',
+        subject: 'Mediator Partner Update',
+        message: document.getElementById('mqMessage').value.trim()
+      });
+      hideMedLoader();
+      if (res?.success) {
+        SD.toast(res.message, 'success');
+        document.getElementById('mqMessage').value = '';
+      }
+    }
+
+    function exportMedOrders(format) {
+      const headers = ['#', 'Order ID', 'Product', 'Reviewer Name', 'Platform', 'Seller', 'Order Date', 'Price Paid', 'Med Less', 'ToGet', 'ActualGot', 'Form Date', 'Refund Date', 'Status', 'Review Link', 'Order Screenshot'];
+      const rows = filteredMedOrders.map(o => [
+        o.orderNo, o.platformOrderId, o.productName, o.accountName, o.orderedPlatform,
+        o.sellerName, o.orderDate, o.pricePaid, o.less, o.toGet, o.actualGot ?? '',
+        o.refundFormDate, o.refundDate, o.orderStatus, o.reviewLink, o.orderScreenshot
+      ]);
+      const fn = `SanDeal_Mediator_${medUser.name}_${new Date().toISOString().slice(0,10)}`;
+      if (format === 'csv') SD.exportToCSV(fn, headers, rows);
+      else SD.exportToXLS(fn, headers, rows);
+    }
+
+    async function refreshMediatorData() {
+      const fresh = await SD.api('getDashboardData');
+      if (fresh && fresh.success) {
+        renderMediatorPayload(fresh);
+      }
+    }
+
+    document.getElementById('medClaimDate').value = new Date().toISOString().slice(0, 10);
+    refreshMediatorData();
+  </script>
+</body>
+</html>
+
+
+
+
+
