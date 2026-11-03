@@ -2411,8 +2411,6 @@
         `;
       }).join('');
     }
-}
-
     function prefillOrderFormFromDeal(dealId) {
       const d = buyerDeals.find(x => String(x.dealId) === String(dealId));
       if (!d) return;
