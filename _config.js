@@ -515,3 +515,210 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 });
+/* ============================================================================
+   SANDEAL PRO GLOBAL ENGINE:
+   1. Universal Table Zoom & Pinch-to-Fit (65% to 100%) across Admin/Buyer/Med
+   2. Clickable Notice Marquee Popup
+   3. Instant Deal Push Notification + Sound Alert Watcher
+   4. Auto SanDeal Rebranding
+   ============================================================================ */
+(function initSanDealGlobalUpgrades() {
+  // Inject Global Zoom & Compact Styles
+  const st = document.createElement('style');
+  st.textContent = `
+    .sd-zoom-bar {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 6px; padding: 4px 8px; margin-bottom: 4px;
+      background: var(--bg-secondary); border: 1px solid var(--border-color);
+      border-radius: 7px; font-size: 0.65rem; color: var(--text-secondary);
+    }
+    .sd-zoom-btns { display: flex; gap: 3px; align-items: center; }
+    .sd-z-btn {
+      padding: 2px 6px; border-radius: 5px; border: 1px solid var(--border-color);
+      background: var(--bg-primary); color: var(--text-primary);
+      font-size: 0.62rem; font-weight: 700; cursor: pointer; font-family: 'JetBrains Mono', monospace;
+    }
+    .sd-z-btn.active { background: var(--accent); color: #0b1120; border-color: var(--accent); }
+    .marquee-bar { cursor: pointer; }
+  `;
+  document.head.appendChild(st);
+
+  window.setSanDealTableZoom = function(wrapId, pct, btnEl) {
+    const wrap = document.getElementById(wrapId);
+    if (!wrap) return;
+    const tbl = wrap.querySelector('table');
+    if (!tbl) return;
+    const scale = Number(pct) / 100;
+    tbl.style.zoom = scale;
+    // Fallback for browsers where CSS zoom behaves differently
+    if (!('zoom' in document.body.style)) {
+      tbl.style.transform = `scale(${scale})`;
+      tbl.style.transformOrigin = 'top left';
+      tbl.style.width = `${Math.round(100 / scale)}%`;
+    }
+    if (btnEl && btnEl.parentElement) {
+      btnEl.parentElement.querySelectorAll('.sd-z-btn').forEach(b => b.classList.remove('active'));
+      btnEl.classList.add('active');
+    }
+    localStorage.setItem('sandeal_tbl_zoom_' + wrapId, pct);
+  };
+
+  function attachUniversalTableZoomBars() {
+    document.querySelectorAll('.table-wrap').forEach((wrap, idx) => {
+      if (wrap.dataset.zoomAttached) return;
+      wrap.dataset.zoomAttached = '1';
+      if (!wrap.id) wrap.id = 'sdAutoTblWrap_' + idx;
+
+      const savedPct = localStorage.getItem('sandeal_tbl_zoom_' + wrap.id) || '100';
+      const bar = document.createElement('div');
+      bar.className = 'sd-zoom-bar';
+      bar.innerHTML = `
+        <span>🔍 <strong>Table Size / Fit:</strong> (Pinch or Tap %)</span>
+        <div class="sd-zoom-btns">
+          ${['100', '85', '75', '65', '55'].map(p => `
+            <button type="button" class="sd-z-btn ${savedPct === p ? 'active' : ''}" onclick="setSanDealTableZoom('${wrap.id}', ${p}, this)">${p === '65' ? '65% Fit' : p + '%'}</button>
+          `).join('')}
+        </div>
+      `;
+      wrap.parentNode.insertBefore(bar, wrap);
+      if (savedPct !== '100') {
+        setTimeout(() => window.setSanDealTableZoom(wrap.id, savedPct), 150);
+      }
+
+      // Two-Finger Pinch-In / Pinch-Out Gesture Support on Table
+      let startDist = 0;
+      let currentPct = Number(savedPct) || 100;
+      wrap.addEventListener('touchstart', e => {
+        if (e.touches.length === 2) {
+          startDist = Math.hypot(
+            e.touches[0].pageX - e.touches[1].pageX,
+            e.touches[0].pageY - e.touches[1].pageY
+          );
+        }
+      }, { passive: true });
+
+      wrap.addEventListener('touchmove', e => {
+        if (e.touches.length === 2 && startDist > 0) {
+          const dist = Math.hypot(
+            e.touches[0].pageX - e.touches[1].pageX,
+            e.touches[0].pageY - e.touches[1].pageY
+          );
+          const ratio = dist / startDist;
+          const nextPct = Math.min(100, Math.max(50, Math.round(currentPct * ratio)));
+          window.setSanDealTableZoom(wrap.id, nextPct);
+        }
+      }, { passive: true });
+    });
+  }
+
+  // Clickable Notice Ticker Popup
+  function makeMarqueeClickable() {
+    document.querySelectorAll('.marquee-bar').forEach(bar => {
+      if (bar.dataset.clickBound) return;
+      bar.dataset.clickBound = '1';
+      bar.title = 'Tap to read full notice';
+      bar.addEventListener('click', () => {
+        const txtEl = bar.querySelector('.marquee-track');
+        const fullText = txtEl ? txtEl.textContent : '';
+        if (!fullText) return;
+        const formatted = fullText.split('   •   ').map(line =>
+          `<div style="background:var(--bg-primary);border-left:3px solid var(--accent);padding:9px 11px;border-radius:7px;margin-bottom:7px;font-size:0.78rem;line-height:1.45;">${SD.escapeHtml(line)}</div>`
+        ).join('');
+
+        let modal = document.getElementById('sdGlobalNoticeModal');
+        if (!modal) {
+          modal = document.createElement('div');
+          modal.id = 'sdGlobalNoticeModal';
+          modal.className = 'modal-backdrop';
+          modal.onclick = e => { if (e.target === modal) modal.classList.remove('open'); };
+          modal.innerHTML = `
+            <div class="modal-box" style="max-width:430px;">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+                <h3 style="font-size:0.95rem;">📢 SanDeal Notice Board</h3>
+                <button onclick="document.getElementById('sdGlobalNoticeModal').classList.remove('open')" style="background:none;border:none;color:var(--text-secondary);font-size:1.1rem;cursor:pointer;">✕</button>
+              </div>
+              <div id="sdGlobalNoticeBody"></div>
+            </div>
+          `;
+          document.body.appendChild(modal);
+        }
+        document.getElementById('sdGlobalNoticeBody').innerHTML = formatted;
+        modal.classList.add('open');
+      });
+    });
+  }
+
+  // Deal Push Alert Subscription & Chime Sound
+  window.playSanDealChime = function() {
+    try {
+      const hr = new Date().getHours();
+      if (hr >= 23 || hr < 7) return; // Silent DND at night
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      [523.25, 659.25, 783.99].forEach((freq, i) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.value = freq;
+        gain.gain.setValueAtTime(0.12, ctx.currentTime + i * 0.12);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i * 0.12 + 0.35);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(ctx.currentTime + i * 0.12);
+        osc.stop(ctx.currentTime + i * 0.12 + 0.36);
+      });
+    } catch (e) {}
+  };
+
+  window.toggleSanDealPushAlerts = async function(btnEl) {
+    if (!('Notification' in window)) {
+      SD.toast('Deal Alerts enabled in-app!', 'success');
+      localStorage.setItem('sandeal_push_subscribed', '1');
+      return;
+    }
+    const perm = await Notification.requestPermission();
+    if (perm === 'granted') {
+      localStorage.setItem('sandeal_push_subscribed', '1');
+      window.playSanDealChime();
+      SD.toast('🔔 Instant Deal Alerts Activated! You will be notified whenever a deal goes live.', 'success', 4000);
+      if (btnEl) btnEl.innerHTML = '🔔 Alerts ON';
+      try {
+        new Notification('🔥 SanDeal Alerts Active!', {
+          body: 'You will get instant notifications whenever new deals are posted or reactivated.',
+          icon: 'https://cdn-icons-png.flaticon.com/512/1170/1170678.png'
+        });
+      } catch (e) {}
+    } else {
+      SD.toast('Please allow Notification permission in browser settings.', 'warning');
+    }
+  };
+
+  window.checkNewDealsForPushAlert = function(dealsList) {
+    if (!Array.isArray(dealsList) || !dealsList.length) return;
+    const activeIds = dealsList.filter(d => String(d.status || 'active').toLowerCase() === 'active').map(d => d.dealId);
+    const prevRaw = localStorage.getItem('sandeal_seen_active_deals');
+    if (prevRaw) {
+      try {
+        const prevSet = new Set(JSON.parse(prevRaw));
+        const newlyAdded = dealsList.filter(d => String(d.status || 'active').toLowerCase() === 'active' && !prevSet.has(d.dealId));
+        if (newlyAdded.length > 0) {
+          const topDeal = newlyAdded[0];
+          window.playSanDealChime();
+          SD.toast(`🔥 NEW DEAL LIVE: ${topDeal.title} (${topDeal.platform})!`, 'success', 6000);
+          if (localStorage.getItem('sandeal_push_subscribed') === '1' && 'Notification' in window && Notification.permission === 'granted') {
+            new Notification(`🔥 New Deal on SanDeal (${topDeal.platform})`, {
+              body: `${topDeal.title} ${Number(topDeal.price) > 0 ? '— Get ₹' + topDeal.youGet : '— Tap to view photo & request!'}`,
+              icon: topDeal.imageUrl || 'https://cdn-icons-png.flaticon.com/512/1170/1170678.png'
+            });
+          }
+        }
+      } catch (e) {}
+    }
+    localStorage.setItem('sandeal_seen_active_deals', JSON.stringify(activeIds));
+  };
+
+  document.addEventListener('DOMContentLoaded', () => {
+    attachUniversalTableZoomBars();
+    makeMarqueeClickable();
+    setTimeout(attachUniversalTableZoomBars, 1200);
+  });
+})();
