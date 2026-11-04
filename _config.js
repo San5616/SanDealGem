@@ -722,3 +722,33 @@ document.addEventListener('DOMContentLoaded', () => {
     setTimeout(attachUniversalTableZoomBars, 1200);
   });
 })();
+// Smart Multi-Category Auto-Detector for SanDeal Deals
+window.detectSanDealCategories = function(titleStr, instStr = '') {
+  const txt = `${titleStr || ''} ${instStr || ''}`.toLowerCase();
+  const cats = new Set();
+
+  // Check explicit tag first e.g. [Cat: Clothing, Kids]
+  const explicit = (instStr || '').match(/\[Cat:\s*([^\]]+)\]/i);
+  if (explicit && explicit[1]) {
+    explicit[1].split(',').forEach(c => cats.add(c.trim()));
+  }
+
+  if (/\b(shirt|t-shirt|tshirt|kurta|kurti|saree|dress|jeans|trouser|top|lehenga|hoodie|jacket|suit|apparel|fashion|wear|bra|brief|pant|legging|cotton|rayon|frock)\b/i.test(txt)) {
+    cats.add('👗 Clothing');
+  }
+  if (/\b(kid|baby|child|toy|train|scooter|infant|newborn|boy|girl|diaper|stroller|potty|puzzle|game|school)\b/i.test(txt)) {
+    cats.add('🧸 Kids & Toys');
+  }
+  if (/\b(home|kitchen|mop|cleaner|candle|container|jar|bottle|lunch|tiffin|heater|purifier|pillow|bedsheet|blanket|towel|organizer|rack|lamp|decor|pan|cooker|mixer|grinder)\b/i.test(txt)) {
+    cats.add('🏠 Home & Kitchen');
+  }
+  if (/\b(watch|earbud|speaker|boat|dashcam|camera|powerbank|charger|cable|hub|adapter|phone|mobile|laptop|mouse|keyboard|trimmer|shaver|dryer|led|electronic)\b/i.test(txt)) {
+    cats.add('📱 Electronics');
+  }
+  if (/\b(cream|serum|shampoo|oil|face|skin|hair|roll-on|perfume|makeup|lipstick|lotion|soap|grooming|massager|comb)\b/i.test(txt)) {
+    cats.add('💄 Beauty & Care');
+  }
+
+  if (cats.size === 0) cats.add('🔥 General Deals');
+  return Array.from(cats);
+};
