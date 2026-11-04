@@ -2571,32 +2571,32 @@
       renderAdminOrders();
     }
 
-    function detectOrderDealTypeHighlight(o) {
+        function detectOrderDealTypeHighlight(o) {
       const p = String(o.orderedPlatform || '').toLowerCase();
       const rem = String(o.remarks || '').toLowerCase();
       const nt = String(o.notes || '').toLowerCase();
       const combined = `${p} ${rem} ${nt}`;
 
-      // 1. Rating Deal -> Soft Pink / Magenta Highlight (Just like your Google Sheet!)
+      // 1. Rating Deal -> 100% SOLID Soft Pink (Never overlaps when scrolling sticky columns!)
       if (combined.includes('rating')) {
         return {
           type: 'RATING',
-          cellStyle: 'background:rgba(236,72,153,0.18);border-left:3px solid #ec4899;',
-          badgeHtml: `<span class="mono" style="font-size:0.54rem;padding:1px 4px;border-radius:4px;background:rgba(236,72,153,0.22);color:#f472b6;font-weight:800;">⭐ ${SD.escapeHtml(o.orderedPlatform)}</span>`
+          cellStyle: 'background:color-mix(in srgb, var(--bg-secondary) 80%, #ec4899 20%);border-left:3px solid #ec4899;',
+          badgeHtml: `<span class="mono" style="font-size:0.54rem;padding:1px 4px;border-radius:4px;background:rgba(236,72,153,0.22);color:#ec4899;font-weight:800;">⭐ ${SD.escapeHtml(o.orderedPlatform)}</span>`
         };
       }
-      // 2. Only Order / Empty / Exchange Deal -> Soft Light Green Highlight
+      // 2. Only Order / Empty Deal -> 100% SOLID Soft Green (Never overlaps when scrolling!)
       if (combined.includes('only_order') || combined.includes('only order') || combined.includes('empty')) {
         return {
           type: 'ONLY_ORDER',
-          cellStyle: 'background:rgba(34,197,94,0.16);border-left:3px solid #22c55e;',
-          badgeHtml: `<span class="mono" style="font-size:0.54rem;padding:1px 4px;border-radius:4px;background:rgba(34,197,94,0.22);color:#4ade80;font-weight:800;">📦 ${SD.escapeHtml(o.orderedPlatform)}</span>`
+          cellStyle: 'background:color-mix(in srgb, var(--bg-secondary) 80%, #22c55e 20%);border-left:3px solid #22c55e;',
+          badgeHtml: `<span class="mono" style="font-size:0.54rem;padding:1px 4px;border-radius:4px;background:rgba(34,197,94,0.22);color:#16a34a;font-weight:800;">📦 ${SD.escapeHtml(o.orderedPlatform)}</span>`
         };
       }
       // 3. Standard Review / Normal Deal
       return {
         type: 'NORMAL',
-        cellStyle: '',
+        cellStyle: 'background:var(--bg-secondary);',
         badgeHtml: `<span class="mono" style="font-size:0.54rem;padding:1px 4px;border-radius:4px;background:var(--bg-primary);color:var(--text-secondary);border:1px solid var(--border-color);">${SD.escapeHtml(o.orderedPlatform || 'Amazon')}</span>`
       };
     }
