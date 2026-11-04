@@ -3,201 +3,63 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Track Order — SastaDeal</title>
+  <title>SanDeal — Public Order Tracker</title>
+  <link rel="manifest" href="manifest.json" />
   <script src="_config.js"></script>
   <style>
     .navbar {
-      position: sticky;
-      top: 0;
-      z-index: 100;
-      background: var(--bg-glass);
-      backdrop-filter: blur(14px);
+      position: sticky; top: 0; z-index: 150;
+      background: var(--bg-glass); backdrop-filter: blur(16px);
       border-bottom: 1px solid var(--border-color);
-      padding: 14px 24px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
+      padding: 7px 10px; display: flex; align-items: center; justify-content: space-between; gap: 6px;
     }
-    .brand {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      text-decoration: none;
-      color: var(--text-primary);
-      font-weight: 800;
-      font-size: 1.2rem;
-    }
+    .brand { display: flex; align-items: center; gap: 6px; text-decoration: none; color: var(--text-primary); font-weight: 800; font-size: 0.92rem; }
     .brand-badge {
-      width: 34px;
-      height: 34px;
-      border-radius: 9px;
-      background: var(--accent);
-      color: var(--accent-text);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: 900;
+      width: 26px; height: 26px; border-radius: 7px;
+      background: linear-gradient(135deg, var(--accent), #9f6e3d); color: #0b1120;
+      display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 0.74rem;
     }
-    .btn {
-      padding: 8px 14px;
-      border-radius: 8px;
-      font-size: 0.85rem;
-      font-weight: 600;
-      text-decoration: none;
-      color: var(--text-primary);
-      background: var(--bg-secondary);
-      border: 1px solid var(--border-color);
-      cursor: pointer;
+    .nav-pill {
+      padding: 5px 9px; border-radius: 7px; border: 1px solid var(--border-color);
+      background: var(--bg-secondary); color: var(--text-primary);
+      font-size: 0.7rem; font-weight: 700; text-decoration: none; cursor: pointer;
+    }
+    .nav-pill.primary { background: var(--accent); color: #0b1120; border-color: transparent; font-weight: 800; }
+
+    .container { max-width: 560px; margin: 0 auto; padding: 10px 10px 50px; }
+
+    .search-box {
+      background: var(--bg-secondary); border: 1px solid var(--border-color);
+      border-radius: 12px; padding: 11px; margin-bottom: 10px;
+    }
+    .track-row { display: flex; gap: 6px; margin-top: 6px; }
+    .track-inp {
+      flex: 1; padding: 7px 10px; border-radius: 7px; border: 1px solid var(--border-color);
+      background: var(--bg-primary); color: var(--text-primary); font-size: 0.76rem; outline: none;
+    }
+    .track-btn {
+      padding: 7px 14px; border-radius: 7px; border: none;
+      background: var(--accent); color: #0b1120; font-weight: 800; font-size: 0.75rem; cursor: pointer;
     }
 
-    .container {
-      max-width: 900px;
-      margin: 0 auto;
-      padding: 32px 20px 64px;
-    }
-
-    .search-card {
-      background: var(--bg-secondary);
-      border: 1px solid var(--border-color);
-      border-radius: 18px;
-      padding: 24px;
-      margin-bottom: 28px;
-      box-shadow: var(--shadow-sm);
-    }
-    .search-row {
-      display: flex;
-      gap: 10px;
-      margin-top: 12px;
-    }
-    .search-row input {
-      flex: 1;
-      padding: 13px 16px;
-      border-radius: 10px;
-      border: 1px solid var(--border-color);
-      background: var(--bg-primary);
-      color: var(--text-primary);
-      font-size: 0.95rem;
-      outline: none;
-    }
-    .search-row input:focus {
-      border-color: var(--accent);
-    }
-    .search-row button {
-      padding: 13px 24px;
-      border-radius: 10px;
-      border: none;
-      background: var(--accent);
-      color: var(--accent-text);
-      font-weight: 700;
-      cursor: pointer;
-    }
-
-    /* Order Result Card */
     .result-card {
-      background: var(--bg-secondary);
-      border: 1px solid var(--border-color);
-      border-radius: 18px;
-      padding: 26px;
-      box-shadow: var(--shadow-lg);
+      background: var(--bg-secondary); border: 1px solid var(--border-color);
+      border-radius: 12px; padding: 11px 12px; margin-bottom: 10px;
     }
-    .result-top {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: flex-start;
-      justify-content: space-between;
-      gap: 14px;
-      padding-bottom: 20px;
-      border-bottom: 1px solid var(--border-color);
-      margin-bottom: 24px;
+    .step-grid-6 {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; margin: 8px 0;
     }
-
-    /* 6-Step Timeline */
-    .timeline-grid {
-      display: grid;
-      grid-template-columns: repeat(6, 1fr);
-      gap: 10px;
-      margin-bottom: 28px;
+    .step-chip {
+      padding: 5px 6px; border-radius: 7px; background: var(--bg-primary);
+      border: 1px solid var(--border-color); text-align: center;
     }
-    .step-item {
-      background: var(--bg-primary);
-      border: 1px solid var(--border-color);
-      border-radius: 12px;
-      padding: 14px 10px;
-      text-align: center;
-      position: relative;
-    }
-    .step-item.done {
-      border-color: #22c55e;
-      background: rgba(22, 163, 74, 0.08);
-    }
-    .step-dot {
-      width: 28px;
-      height: 28px;
-      border-radius: 999px;
-      margin: 0 auto 8px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 0.8rem;
-      font-weight: 800;
-      background: var(--bg-tertiary);
-      color: var(--text-secondary);
-    }
-    .step-item.done .step-dot {
-      background: #22c55e;
-      color: #0f172a;
-    }
-    .step-title {
-      font-size: 0.78rem;
-      font-weight: 700;
-      margin-bottom: 4px;
-    }
-    .step-date {
-      font-size: 0.72rem;
-      color: var(--text-secondary);
-    }
-
-    /* Details Grid */
+    .step-chip.done { border-color: rgba(34, 197, 94, 0.55); background: rgba(34, 197, 94, 0.08); }
     .info-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
-      gap: 14px;
-      margin-bottom: 24px;
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px;
+      background: var(--bg-primary); border: 1px solid var(--border-color);
+      border-radius: 9px; padding: 7px; text-align: center; font-size: 0.72rem;
     }
-    .info-box {
-      background: var(--bg-primary);
-      border: 1px solid var(--border-color);
-      border-radius: 12px;
-      padding: 12px 14px;
-    }
-    .info-box small {
-      display: block;
-      font-size: 0.72rem;
-      color: var(--text-muted);
-      text-transform: uppercase;
-      font-weight: 600;
-      margin-bottom: 4px;
-    }
-    .info-box strong {
-      font-size: 0.95rem;
-    }
-
-    .payment-banner {
-      background: var(--bg-primary);
-      border: 1px solid var(--border-hover);
-      border-radius: 14px;
-      padding: 18px;
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      justify-content: space-between;
-      gap: 14px;
-    }
-
-    @media (max-width: 768px) {
-      .timeline-grid { grid-template-columns: repeat(2, 1fr); }
-      .search-row { flex-direction: column; }
-    }
+    .info-grid small { font-size: 0.54rem; color: var(--text-muted); text-transform: uppercase; display: block; }
   </style>
 </head>
 <body>
@@ -205,189 +67,109 @@
   <nav class="navbar">
     <a href="index.html" class="brand">
       <div class="brand-badge">SD</div>
-      <span>SastaDeal</span>
+      <span>SanDeal</span>
     </a>
-    <div style="display:flex;gap:10px;">
-      <a href="index.html" class="btn">🏠 Home</a>
-      <a href="deals.html" class="btn">🔥 Deals</a>
-      <button class="btn" onclick="SD.toggleTheme()">🌓</button>
-      <a href="login.html" class="btn" style="background:var(--accent);color:var(--accent-text);border:none;">Login</a>
+    <div style="display:flex;gap:5px;align-items:center;">
+      <a href="index.html" class="nav-pill">🏠 Home</a>
+      <a href="deals.html" class="nav-pill">🔥 Deals</a>
+      <button type="button" class="nav-pill" onclick="SD.toggleTheme()">🌓</button>
+      <a href="login.html" class="nav-pill primary" id="trackTopLoginBtn">🔐 Login</a>
     </div>
   </nav>
 
   <main class="container">
-    <div class="search-card">
-      <h1 style="font-size:1.35rem;font-weight:800;">📦 Public Order Tracking</h1>
-      <p style="font-size:0.86rem;color:var(--text-secondary);">
-        Enter your Amazon, Flipkart, Blinkit, or Myntra <strong>Platform Order ID</strong> to view live 6-step tracking & payout status.
-      </p>
-      <form class="search-row" onsubmit="handleTrackSubmit(event)">
-        <input
-          type="text"
-          id="trackInput"
-          class="mono"
-          placeholder="e.g. 404-2759471-7602761 or OD338850088191912100"
-          required
-        />
-        <button type="submit" id="trackBtn">Track Status</button>
+    <div class="search-box">
+      <div style="font-weight:800;font-size:0.86rem;">📦 Public Order Tracking</div>
+      <div style="font-size:0.68rem;color:var(--text-secondary);">Enter Amazon, Flipkart, Blinkit or Myntra Platform Order ID</div>
+      <form class="track-row" onsubmit="handlePublicTrack(event)">
+        <input type="text" id="pubOrderIdInput" class="track-inp mono" placeholder="e.g. 404-2759471-7602761" required />
+        <button type="submit" class="track-btn">Track</button>
       </form>
     </div>
 
-    <div id="trackResultArea"></div>
+    <div id="trackResultsArea"></div>
   </main>
 
   <script>
-    (function autoTrackFromUrl() {
+    async function handlePublicTrack(e) {
+      if (e) e.preventDefault();
+      const q = document.getElementById('pubOrderIdInput').value.trim();
+      if (!q) return;
+      const area = document.getElementById('trackResultsArea');
+      area.innerHTML = `<div class="result-card" style="text-align:center;font-size:0.76rem;color:var(--text-secondary);">⏳ Searching SanDeal records for <strong>${SD.escapeHtml(q)}</strong>...</div>`;
+
+      const res = await SD.api('trackOrder', { orderId: q });
+      if (!res?.success || !res.results?.length) {
+        area.innerHTML = `<div class="result-card" style="text-align:center;font-size:0.76rem;color:#ef4444;">❌ No order found matching "${SD.escapeHtml(q)}".</div>`;
+        return;
+      }
+
+      area.innerHTML = res.results.map(o => {
+        const isPaid = String(o.paymentStatus || '').toLowerCase() === 'paid';
+        return `
+          <div class="result-card">
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:5px;">
+              <div>
+                <span class="mono" style="font-weight:800;color:var(--accent);font-size:0.82rem;">Order #${o.orderNo}</span>
+                <span class="mono" style="font-size:0.68rem;color:var(--text-secondary);margin-left:5px;">${SD.escapeHtml(o.platformOrderId)}</span>
+              </div>
+              <div style="display:flex;gap:4px;align-items:center;">
+                ${o.daysSinceRefundForm !== null ? `<span class="mono" style="font-size:0.6rem;padding:2px 6px;border-radius:999px;background:rgba(168,85,247,0.16);color:#c084fc;font-weight:700;">⏱️ Form: ${o.daysSinceRefundForm}d ago</span>` : ''}
+                ${SD.statusBadge(o.orderStatus)}
+              </div>
+            </div>
+
+            <div style="font-weight:700;font-size:0.78rem;line-height:1.25;margin-bottom:6px;">${SD.escapeHtml(o.productName)}</div>
+
+            <!-- Compact 3x2 6-Step Grid -->
+            <div class="step-grid-6">
+              ${(o.steps || []).map(s => `
+                <div class="step-chip ${s.done ? 'done' : ''}">
+                  <div style="font-size:0.63rem;font-weight:800;color:${s.done ? '#22c55e' : 'var(--text-muted)'};">${s.done ? '✅' : '⏳'} ${SD.escapeHtml(s.name)}</div>
+                  <div class="mono" style="font-size:0.58rem;color:var(--text-secondary);margin-top:1px;">${s.date ? SD.formatDate(s.date) : 'Pending'}</div>
+                </div>
+              `).join('')}
+            </div>
+
+            <!-- All Financial & Account Details in 1 Compact 3x2 Box -->
+            <div class="info-grid">
+              <div><small>Platform</small><strong style="color:var(--accent);">${SD.escapeHtml(o.orderedPlatform)}</strong></div>
+              <div><small>Reviewer</small><strong style="color:var(--cyan);">${SD.escapeHtml(o.accountName)}</strong></div>
+              <div><small>Order Date</small><strong class="mono">${SD.formatDate(o.orderDate)}</strong></div>
+              <div style="border-top:1px solid var(--border-color);padding-top:4px;"><small>Price Paid</small><strong class="mono">${SD.formatCurrency(o.pricePaid)}</strong></div>
+              <div style="border-top:1px solid var(--border-color);padding-top:4px;"><small>Buyer Less</small><strong class="mono" style="color:#dc2626;">-${SD.formatCurrency(o.buyerLess)}</strong></div>
+              <div style="border-top:1px solid var(--border-color);padding-top:4px;"><small>Refund ToGet</small><strong class="mono" style="color:#22c55e;">${SD.formatCurrency(o.buyerToGet)}</strong></div>
+            </div>
+
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-top:7px;padding-top:6px;border-top:1px dashed var(--border-color);font-size:0.71rem;">
+              <div>
+                <span style="color:var(--text-secondary);font-size:0.65rem;">Payout:</span>
+                ${SD.paymentBadge(o.paymentStatus)}
+                ${isPaid && o.paymentDate ? `<span class="mono" style="font-size:0.62rem;color:#22c55e;margin-left:4px;">(${SD.formatDate(o.paymentDate)})</span>` : ''}
+              </div>
+              <strong class="mono" style="color:${isPaid ? '#22c55e' : 'var(--text-muted)'};">
+                Settled: ${o.buyerActualGot !== null ? SD.formatCurrency(o.buyerActualGot) : '—'}
+              </strong>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    (function initTrackPage() {
+      const u = SD.getUser();
+      if (u) {
+        const b = document.getElementById('trackTopLoginBtn');
+        b.textContent = `⚡ ${u.name.split(' ')[0]}'s Panel`;
+        b.href = u.role === 'admin' ? 'admin-dashboard.html' : (u.role === 'mediator' ? 'mediator-dashboard.html' : 'buyer-dashboard.html');
+      }
       const params = new URLSearchParams(window.location.search);
-      const id = params.get('id');
-      if (id) {
-        document.getElementById('trackInput').value = id;
-        lookupOrder(id);
+      const oid = params.get('orderId');
+      if (oid) {
+        document.getElementById('pubOrderIdInput').value = oid;
+        handlePublicTrack();
       }
     })();
-
-    function handleTrackSubmit(e) {
-      e.preventDefault();
-      const val = document.getElementById('trackInput').value.trim();
-      lookupOrder(val);
-    }
-
-    async function lookupOrder(platformOrderId) {
-      const area = document.getElementById('trackResultArea');
-      if (!platformOrderId) return;
-
-      // Key Business Rule #7: Reject serial OrderNo on public tracker
-      if (/^\d{1,6}$/.test(platformOrderId)) {
-        area.innerHTML = `
-          <div class="result-card" style="border-color:var(--red);text-align:center;">
-            <h3 style="color:#ef4444;margin-bottom:6px;">⚠️ Invalid Format: Serial Order No Not Allowed</h3>
-            <p style="color:var(--text-secondary);font-size:0.9rem;">
-              Public tracking only accepts your <strong>Platform Order ID</strong> (e.g., <span class="mono">404-2759471-7602761</span>), not the serial Order No.
-            </p>
-          </div>
-        `;
-        return;
-      }
-
-      area.innerHTML = `
-        <div class="result-card" style="text-align:center;padding:40px;color:var(--text-secondary);">
-          Searching order records for <strong class="mono">${SD.escapeHtml(platformOrderId)}</strong>...
-        </div>
-      `;
-
-      const res = await SD.api('trackOrder', { platformOrderId: platformOrderId });
-      if (!res || !res.success || !res.order) {
-        area.innerHTML = `
-          <div class="result-card" style="text-align:center;padding:36px;">
-            <div style="font-size:2rem;margin-bottom:8px;">🔍</div>
-            <h3>Order Not Found</h3>
-            <p style="color:var(--text-secondary);font-size:0.9rem;margin-top:4px;">
-              ${SD.escapeHtml(res?.error || 'No matching order found. Please check your Platform Order ID.')}
-            </p>
-          </div>
-        `;
-        return;
-      }
-
-      const o = res.order;
-      const isRefunded = String(o.orderStatus || '').toLowerCase() === 'got refund';
-
-      // Days counter since RefundFormDate
-      let daysBadge = '';
-      if (o.refundFormDate) {
-        if (isRefunded && o.refundDate) {
-          const totalDays = SD.daysBetween(o.refundFormDate, o.refundDate);
-          daysBadge = `<span class="mono" style="font-size:0.78rem;padding:4px 10px;border-radius:999px;background:var(--green-bg);color:#22c55e;">⚡ Refunded in ${totalDays} day(s)</span>`;
-        } else {
-          const elapsed = SD.daysBetween(o.refundFormDate);
-          daysBadge = `<span class="mono" style="font-size:0.78rem;padding:4px 10px;border-radius:999px;background:var(--purple-bg);color:#a855f7;">⏳ ${elapsed} day(s) since Refund Form</span>`;
-        }
-      }
-
-      const steps = [
-        { label: 'Order Placed',     date: o.orderDate,      done: Boolean(o.orderDate) },
-        { label: 'Product Received', date: o.deliveryDate,   done: Boolean(o.deliveryDate) },
-        { label: 'Reviewed',         date: o.reviewDate,     done: Boolean(o.reviewDate) },
-        { label: 'Review Live',      date: o.reviewLiveDate, done: Boolean(o.reviewLiveDate) },
-        { label: 'Refund Form',      date: o.refundFormDate, done: Boolean(o.refundFormDate) },
-        { label: 'Got Refund',       date: o.refundDate,     done: isRefunded || Boolean(o.refundDate) }
-      ];
-
-      area.innerHTML = `
-        <div class="result-card">
-          <div class="result-top">
-            <div>
-              <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;flex-wrap:wrap;">
-                <span class="mono" style="font-weight:800;color:var(--accent);font-size:1rem;">Order #${SD.escapeHtml(o.orderNo)}</span>
-                <span class="mono" style="font-size:0.88rem;background:var(--bg-primary);padding:3px 10px;border-radius:6px;border:1px solid var(--border-color);">
-                  ${SD.escapeHtml(o.platformOrderId)}
-                </span>
-                ${SD.statusBadge(o.orderStatus)}
-                ${daysBadge}
-              </div>
-              <h2 style="font-size:1.15rem;font-weight:700;">${SD.escapeHtml(o.productName)}</h2>
-            </div>
-          </div>
-
-          <!-- 6-Step Progress Timeline -->
-          <div class="timeline-grid">
-            ${steps.map((st, idx) => `
-              <div class="step-item ${st.done ? 'done' : ''}">
-                <div class="step-dot">${st.done ? '✓' : (idx + 1)}</div>
-                <div class="step-title">${st.label}</div>
-                <div class="step-date mono">${st.date ? SD.formatDate(st.date) : 'Pending'}</div>
-              </div>
-            `).join('')}
-          </div>
-
-          <!-- Key Order Info (Mediator Name Hidden as per Spec) -->
-          <div class="info-grid">
-            <div class="info-box">
-              <small>Platform</small>
-              <strong>${SD.escapeHtml(o.orderedPlatform)}</strong>
-            </div>
-            <div class="info-box">
-              <small>Reviewer Account</small>
-              <strong style="color:var(--cyan)">${SD.escapeHtml(o.accountName)}</strong>
-            </div>
-            <div class="info-box">
-              <small>Order Date</small>
-              <strong class="mono">${SD.formatDate(o.orderDate)}</strong>
-            </div>
-            <div class="info-box">
-              <small>Price Paid</small>
-              <strong class="mono">${SD.formatCurrency(o.pricePaid)}</strong>
-            </div>
-            <div class="info-box">
-              <small>Buyer Less</small>
-              <strong class="mono" style="color:#ef4444">-${SD.formatCurrency(o.buyerLess)}</strong>
-            </div>
-            <div class="info-box">
-              <small>Refund To Get</small>
-              <strong class="mono" style="color:#22c55e">${SD.formatCurrency(o.buyerToGet)}</strong>
-            </div>
-          </div>
-
-          <!-- Payment Settlement Section -->
-          <div class="payment-banner">
-            <div>
-              <div style="font-size:0.75rem;color:var(--text-muted);text-transform:uppercase;font-weight:700;">Payout Settlement Status</div>
-              <div style="display:flex;align-items:center;gap:12px;margin-top:6px;flex-wrap:wrap;">
-                ${SD.paymentBadge(o.paymentStatus)}
-                <span class="mono" style="font-size:0.9rem;">
-                  Settled Amount: <strong style="color:#ef4444">${o.buyerActualGot !== null ? SD.formatCurrency(o.buyerActualGot) : '—'}</strong>
-                </span>
-                ${o.paymentDate ? `<span class="mono" style="font-size:0.82rem;color:var(--text-secondary);">on ${SD.formatDate(o.paymentDate)} (${SD.escapeHtml(o.paymentMethod || 'UPI')})</span>` : ''}
-              </div>
-            </div>
-            <div style="display:flex;gap:8px;">
-              ${o.reviewLink ? `<a href="${SD.escapeHtml(o.reviewLink)}" target="_blank" rel="noopener" class="btn">⭐ Review Link</a>` : ''}
-              ${o.orderScreenshot ? `<a href="${SD.escapeHtml(o.orderScreenshot)}" target="_blank" rel="noopener" class="btn">🖼️ Screenshot</a>` : ''}
-            </div>
-          </div>
-        </div>
-      `;
-    }
   </script>
 </body>
 </html>
