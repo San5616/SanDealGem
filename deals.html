@@ -3,268 +3,64 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Live Deals — SastaDeal</title>
+  <title>SanDeal — Exclusive Live Deals</title>
+  <link rel="manifest" href="manifest.json" />
   <script src="_config.js"></script>
   <style>
     .navbar {
-      position: sticky;
-      top: 0;
-      z-index: 100;
-      background: var(--bg-glass);
-      backdrop-filter: blur(14px);
+      position: sticky; top: 0; z-index: 150;
+      background: var(--bg-glass); backdrop-filter: blur(16px);
       border-bottom: 1px solid var(--border-color);
-      padding: 14px 24px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      flex-wrap: wrap;
-      gap: 12px;
+      padding: 7px 10px; display: flex; align-items: center; justify-content: space-between; gap: 6px;
     }
-    .brand {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      text-decoration: none;
-      color: var(--text-primary);
-      font-weight: 800;
-      font-size: 1.2rem;
-    }
+    .brand { display: flex; align-items: center; gap: 6px; text-decoration: none; color: var(--text-primary); font-weight: 800; font-size: 0.92rem; }
     .brand-badge {
-      width: 34px;
-      height: 34px;
-      border-radius: 9px;
-      background: var(--accent);
-      color: var(--accent-text);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: 900;
+      width: 26px; height: 26px; border-radius: 7px;
+      background: linear-gradient(135deg, var(--accent), #9f6e3d); color: #0b1120;
+      display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 0.74rem;
     }
-    .nav-actions {
-      display: flex;
-      align-items: center;
-      gap: 10px;
+    .nav-pill {
+      padding: 5px 9px; border-radius: 7px; border: 1px solid var(--border-color);
+      background: var(--bg-secondary); color: var(--text-primary);
+      font-size: 0.7rem; font-weight: 700; text-decoration: none; cursor: pointer;
+      display: inline-flex; align-items: center; gap: 4px;
     }
-    .btn {
-      padding: 8px 14px;
-      border-radius: 8px;
-      font-size: 0.85rem;
-      font-weight: 600;
-      text-decoration: none;
-      color: var(--text-primary);
-      background: var(--bg-secondary);
-      border: 1px solid var(--border-color);
-      cursor: pointer;
-    }
-    .btn.primary {
-      background: var(--accent);
-      color: var(--accent-text);
-      border-color: transparent;
-      font-weight: 700;
-    }
+    .nav-pill.primary { background: var(--accent); color: #0b1120; border-color: transparent; font-weight: 800; }
 
-    .container {
-      max-width: 1200px;
-      margin: 0 auto;
-      padding: 28px 20px 64px;
-    }
+    .container { max-width: 1150px; margin: 0 auto; padding: 10px 10px 60px; }
 
-    .page-header {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      justify-content: space-between;
-      gap: 16px;
-      margin-bottom: 24px;
-    }
-    .page-header h1 {
-      font-size: 1.65rem;
-      font-weight: 800;
-    }
-
-    /* Filter Bar */
     .filter-bar {
-      background: var(--bg-secondary);
-      border: 1px solid var(--border-color);
-      border-radius: 14px;
-      padding: 14px;
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-      margin-bottom: 24px;
+      background: var(--bg-secondary); border: 1px solid var(--border-color);
+      border-radius: 11px; padding: 8px 10px; margin-bottom: 10px;
     }
-    .platform-pills {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
+    .plat-pills { display: flex; gap: 5px; overflow-x: auto; padding-bottom: 6px; scrollbar-width: none; }
+    .plat-pills::-webkit-scrollbar { display: none; }
+    .p-pill {
+      padding: 4px 10px; border-radius: 999px; font-size: 0.68rem; font-weight: 700;
+      background: var(--bg-primary); border: 1px solid var(--border-color);
+      color: var(--text-secondary); cursor: pointer; white-space: nowrap;
     }
-    .pill {
-      padding: 6px 14px;
-      border-radius: 999px;
-      font-size: 0.8rem;
-      font-weight: 600;
-      border: 1px solid var(--border-color);
-      background: var(--bg-primary);
-      color: var(--text-secondary);
-      cursor: pointer;
-    }
-    .pill.active {
-      background: var(--accent);
-      color: var(--accent-text);
-      border-color: transparent;
-      font-weight: 700;
-    }
-    .search-input {
-      min-width: 260px;
-      flex: 1;
-      max-width: 360px;
-      padding: 9px 14px;
-      border-radius: 10px;
-      border: 1px solid var(--border-color);
-      background: var(--bg-primary);
-      color: var(--text-primary);
-      font-size: 0.88rem;
-      outline: none;
-    }
+    .p-pill.active { background: var(--accent); color: #0b1120; border-color: var(--accent); }
 
-    /* Horizontal Deal Card Grid */
     .deals-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(460px, 1fr));
-      gap: 18px;
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 9px;
     }
     .deal-card {
-      background: var(--bg-secondary);
-      border: 1px solid var(--border-color);
-      border-radius: 16px;
-      padding: 16px;
-      display: flex;
-      gap: 16px;
-      transition: transform 0.2s, border-color 0.2s;
+      background: var(--bg-secondary); border: 1px solid var(--border-color);
+      border-radius: 12px; padding: 10px; display: flex; flex-direction: column; justify-content: space-between; gap: 7px;
     }
-    .deal-card:hover {
-      transform: translateY(-3px);
-      border-color: var(--border-hover);
-      box-shadow: var(--shadow-lg);
+    .deal-thumb {
+      width: 68px; height: 68px; border-radius: 8px; background: #fff;
+      border: 1px solid var(--border-color); display: flex; align-items: center;
+      justify-content: center; overflow: hidden; flex-shrink: 0; cursor: pointer;
     }
-    .deal-img-wrap {
-      width: 130px;
-      height: 145px;
-      flex-shrink: 0;
-      border-radius: 12px;
-      background: var(--bg-primary);
-      border: 1px solid var(--border-color);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      overflow: hidden;
-      position: relative;
-    }
-    .deal-img-wrap img {
-      width: 100%;
-      height: 100%;
-      object-fit: contain;
-    }
-    .platform-tag {
-      position: absolute;
-      top: 6px;
-      left: 6px;
-      background: rgba(15, 23, 42, 0.85);
-      color: var(--accent);
-      padding: 2px 8px;
-      border-radius: 6px;
-      font-size: 0.68rem;
-      font-weight: 700;
-    }
+    .deal-thumb img { width: 100%; height: 100%; object-fit: contain; }
 
-    .deal-body {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      min-width: 0;
+    .modal-backdrop {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.78); backdrop-filter: blur(3px);
+      display: none; align-items: center; justify-content: center; z-index: 500; padding: 12px;
     }
-    .deal-title {
-      font-size: 0.98rem;
-      font-weight: 700;
-      margin-bottom: 6px;
-      display: -webkit-box;
-      -webkit-line-clamp: 2;
-      -webkit-box-orient: vertical;
-      overflow: hidden;
-    }
-    .deal-inst {
-      font-size: 0.8rem;
-      color: var(--text-secondary);
-      margin-bottom: 12px;
-      display: -webkit-box;
-      -webkit-line-clamp: 2;
-      -webkit-box-orient: vertical;
-      overflow: hidden;
-    }
-
-    /* Price Row: Price | Less (Red) | You Get (Green) */
-    .price-strip {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 8px;
-      background: var(--bg-primary);
-      padding: 8px 10px;
-      border-radius: 10px;
-      border: 1px solid var(--border-color);
-      margin-bottom: 12px;
-    }
-    .price-item {
-      display: flex;
-      flex-direction: column;
-    }
-    .price-item small {
-      font-size: 0.68rem;
-      color: var(--text-muted);
-      text-transform: uppercase;
-      font-weight: 600;
-    }
-    .price-item strong {
-      font-size: 0.92rem;
-    }
-    .blurred-price {
-      filter: blur(5px);
-      user-select: none;
-    }
-
-    .deal-actions {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    .deal-btn {
-      flex: 1;
-      padding: 9px 12px;
-      border-radius: 8px;
-      border: none;
-      font-size: 0.82rem;
-      font-weight: 700;
-      cursor: pointer;
-      text-align: center;
-      text-decoration: none;
-    }
-    .deal-btn.request {
-      background: var(--accent);
-      color: var(--accent-text);
-    }
-    .deal-btn.login-lock {
-      background: var(--bg-tertiary);
-      color: var(--accent);
-      border: 1px dashed var(--accent);
-    }
-
-    @media (max-width: 560px) {
-      .deals-grid { grid-template-columns: 1fr; }
-      .deal-card { flex-direction: column; }
-      .deal-img-wrap { width: 100%; height: 170px; }
-    }
+    .modal-backdrop.open { display: flex; }
   </style>
 </head>
 <body>
@@ -272,171 +68,157 @@
   <nav class="navbar">
     <a href="index.html" class="brand">
       <div class="brand-badge">SD</div>
-      <span>SastaDeal</span>
+      <span>SanDeal</span>
     </a>
-    <div class="nav-actions">
-      <a href="index.html" class="btn">🏠 Home</a>
-      <a href="track.html" class="btn">📦 Track Order</a>
-      <button class="btn" onclick="SD.toggleTheme()">🌓</button>
-      <a href="login.html?next=deals.html" id="navLoginBtn" class="btn primary">🔓 Login to Unlock Prices</a>
+    <div style="display:flex;gap:5px;align-items:center;">
+      <button type="button" class="nav-pill" onclick="toggleSanDealPushAlerts(this)">🔔 Alerts</button>
+      <a href="index.html" class="nav-pill">🏠 Home</a>
+      <a href="track.html" class="nav-pill">🔍 Track</a>
+      <button type="button" class="nav-pill" onclick="SD.toggleTheme()">🌓</button>
+      <a href="login.html" class="nav-pill primary" id="dealsTopDashBtn">🔐 Login</a>
     </div>
   </nav>
 
   <main class="container">
-    <div class="page-header">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;margin-bottom:8px;">
       <div>
-        <h1>🔥 Exclusive Live Deals</h1>
-        <p style="color:var(--text-secondary);font-size:0.9rem;" id="dealSubtitle">
-          Login to view real deal prices, less amounts, and request deals directly.
-        </p>
+        <h1 style="font-size:1.05rem;font-weight:800;">🔥 Exclusive Live Deals</h1>
+        <p style="font-size:0.7rem;color:var(--text-secondary);">Tap any photo to open Swipe Gallery & Request Deal</p>
       </div>
+      <button type="button" class="nav-pill primary" onclick="if(filteredDeals.length)openDealGallery(0)">
+        🖼️ Swipe Gallery Mode
+      </button>
     </div>
 
     <div class="filter-bar">
-      <div class="platform-pills" id="platformPills">
-        <button class="pill active" onclick="setPlatformFilter('ALL', this)">All Platforms</button>
-        <button class="pill" onclick="setPlatformFilter('Amazon', this)">Amazon</button>
-        <button class="pill" onclick="setPlatformFilter('Flipkart', this)">Flipkart</button>
-        <button class="pill" onclick="setPlatformFilter('Blinkit', this)">Blinkit</button>
-        <button class="pill" onclick="setPlatformFilter('Myntra', this)">Myntra</button>
-        <button class="pill" onclick="setPlatformFilter('Meesho', this)">Meesho</button>
+      <div class="plat-pills" id="platPillsWrap">
+        <button class="p-pill active" onclick="setPlatFilter('ALL', this)">All Platforms</button>
+        <button class="p-pill" onclick="setPlatFilter('Amazon', this)">Amazon</button>
+        <button class="p-pill" onclick="setPlatFilter('Flipkart', this)">Flipkart</button>
+        <button class="p-pill" onclick="setPlatFilter('Blinkit', this)">Blinkit</button>
+        <button class="p-pill" onclick="setPlatFilter('Myntra', this)">Myntra</button>
+        <button class="p-pill" onclick="setPlatFilter('Meesho', this)">Meesho</button>
       </div>
-      <input
-        type="text"
-        id="dealSearchInput"
-        class="search-input"
-        placeholder="🔍 Search deal title or instructions..."
-        oninput="renderDeals()"
-      />
+      <input type="text" id="dealSearchInput" oninput="renderDealsList()" placeholder="🔍 Search deal title or platform..." style="width:100%;padding:6px 9px;border-radius:7px;border:1px solid var(--border-color);background:var(--bg-primary);color:var(--text-primary);font-size:0.74rem;outline:none;" />
     </div>
 
-    <div id="dealsGrid" class="deals-grid">
-      <div style="grid-column:1/-1;text-align:center;padding:48px;color:var(--text-secondary);">
-        Loading active deals...
-      </div>
+    <div class="deals-grid" id="dealsGridContainer">
+      <div style="grid-column:1/-1;text-align:center;padding:30px;color:var(--text-secondary);">Loading live deals...</div>
     </div>
   </main>
 
+  <!-- Full-Screen Swipe Gallery & Request Modal -->
+  <div class="modal-backdrop" id="dealGalleryModal" onclick="if(event.target===this)this.classList.remove('open')">
+    <div style="width:94vw;max-width:450px;background:var(--bg-secondary);border:1px solid var(--border-color);border-radius:16px;padding:12px;text-align:center;" onclick="event.stopPropagation()">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+        <span class="mono" style="font-size:0.7rem;color:var(--accent);font-weight:800;" id="dgCounter">Deal</span>
+        <div style="display:flex;gap:5px;">
+          <button type="button" class="nav-pill" onclick="dgAdjustZoom(0.4)">🔍+</button>
+          <button type="button" class="nav-pill" onclick="dgAdjustZoom(-0.4)">🔍-</button>
+          <button type="button" class="nav-pill" style="color:#ef4444;" onclick="document.getElementById('dealGalleryModal').classList.remove('open')">✕ Close</button>
+        </div>
+      </div>
+
+      <div style="width:100%;height:56vh;background:#fff;border-radius:10px;overflow:auto;display:flex;align-items:center;justify-content:center;" ontouchstart="dgTouchStart(event)" ontouchend="dgTouchEnd(event)">
+        <img id="dgImg" src="" alt="" ondblclick="dgToggleZoom()" style="max-width:100%;max-height:100%;object-fit:contain;transition:transform 0.2s;" />
+      </div>
+
+      <div style="margin-top:8px;font-weight:800;font-size:0.84rem;" id="dgTitle">Deal</div>
+      <div class="mono" style="font-size:0.72rem;color:#22c55e;margin-top:2px;" id="dgPriceInfo"></div>
+
+      <div style="display:flex;gap:6px;margin-top:10px;align-items:center;">
+        <button type="button" class="nav-pill" onclick="dgStep(-1)">◀ Prev</button>
+        <button type="button" id="dgReqBtn" class="nav-pill primary" style="flex:1;justify-content:center;padding:8px;" onclick="requestCurrentGalleryDeal()">
+          ⚡ Request Deal
+        </button>
+        <button type="button" class="nav-pill" style="color:#22c55e;border-color:rgba(34,197,94,0.4);" onclick="askCurrentDealOnWa()">🟢 WA</button>
+        <button type="button" class="nav-pill" onclick="dgStep(1)">Next ▶</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     let allDeals = [];
-    let isUserLoggedIn = false;
-    let activePlatform = 'ALL';
+    let filteredDeals = [];
+    let activePlat = 'ALL';
+    let dgIdx = 0;
+    let dgScale = 1;
+    let dgStartX = 0;
 
-    (function initAuthHeader() {
-      const user = SD.getUser();
-      const btn = document.getElementById('navLoginBtn');
-      if (user && SD.getToken()) {
-        isUserLoggedIn = true;
-        btn.href = user.role === 'admin' ? 'admin-dashboard.html' : 'buyer-dashboard.html';
-        btn.textContent = `⚡ ${user.name.split(' ')[0]}'s Panel`;
-        document.getElementById('dealSubtitle').textContent = 'Real prices unlocked! Click "Request Deal" to notify Admin immediately.';
-      }
-    })();
-
-    function setPlatformFilter(plat, btn) {
-      activePlatform = plat;
-      document.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
-      btn.classList.add('active');
-      renderDeals();
+    // Fast Thumbnail Resolver (w=400 for fast card grid, w=900 for zoom gallery)
+    function resolveThumb(url, size = 'w400') {
+      if (!url) return '';
+      const s = String(url).trim();
+      const m1 = s.match(/[?&]id=([a-zA-Z0-9_-]{15,})/);
+      const m2 = s.match(/\/file\/d\/([a-zA-Z0-9_-]{15,})/);
+      const id = (m1 && m1[1]) || (m2 && m2[1]);
+      return id ? `https://drive.google.com/thumbnail?id=${id}&sz=${size}` : s;
     }
 
-    function renderDeals() {
-      const grid = document.getElementById('dealsGrid');
-      const query = document.getElementById('dealSearchInput').value.trim().toLowerCase();
+    function setPlatFilter(plat, btn) {
+      activePlat = plat;
+      document.querySelectorAll('.p-pill').forEach(b => b.classList.remove('active'));
+      if (btn) btn.classList.add('active');
+      renderDealsList();
+    }
 
-      const filtered = allDeals.filter(d => {
-        const matchPlat = activePlatform === 'ALL' || d.platform.toLowerCase().includes(activePlatform.toLowerCase());
-        const matchText = !query ||
-          d.title.toLowerCase().includes(query) ||
-          (d.instructions || '').toLowerCase().includes(query) ||
-          d.platform.toLowerCase().includes(query);
-        return matchPlat && matchText;
+    function renderDealsList() {
+      const q = document.getElementById('dealSearchInput').value.trim().toLowerCase();
+      filteredDeals = allDeals.filter(d => {
+        if (activePlat !== 'ALL' && String(d.platform || '').toLowerCase() !== activePlat.toLowerCase()) return false;
+        if (q && !`${d.title} ${d.platform} ${d.instructions}`.toLowerCase().includes(q)) return false;
+        return true;
       });
 
-      if (!filtered.length) {
-        grid.innerHTML = `
-          <div style="grid-column:1/-1;text-align:center;padding:56px 20px;background:var(--bg-secondary);border-radius:16px;border:1px solid var(--border-color);">
-            <div style="font-size:2rem;margin-bottom:8px;">🛍️</div>
-            <h3>No Active Deals Found</h3>
-            <p style="color:var(--text-secondary);font-size:0.88rem;margin-top:4px;">Check back soon or clear your search filters.</p>
-          </div>
-        `;
+      const wrap = document.getElementById('dealsGridContainer');
+      if (!filteredDeals.length) {
+        wrap.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:30px;color:var(--text-secondary);">No matching deals found.</div>`;
         return;
       }
 
-      grid.innerHTML = filtered.map(d => {
-        const imgHtml = d.imageUrl
-          ? `<img src="${SD.escapeHtml(d.imageUrl)}" alt="${SD.escapeHtml(d.title)}" onerror="this.style.display='none'" />`
-          : `<span style="font-size:2rem;">📦</span>`;
-
-        if (!isUserLoggedIn) {
-          return `
-            <div class="deal-card">
-              <div class="deal-img-wrap">
-                <span class="platform-tag">${SD.escapeHtml(d.platform)}</span>
-                ${imgHtml}
-              </div>
-              <div class="deal-body">
-                <div>
-                  <div class="deal-title">${SD.escapeHtml(d.title)}</div>
-                  <div class="deal-inst">${SD.escapeHtml(d.instructions || 'Full deal instructions visible after login.')}</div>
-                </div>
-                <div>
-                  <div class="price-strip">
-                    <div class="price-item">
-                      <small>Price</small>
-                      <strong class="mono blurred-price">₹999</strong>
-                    </div>
-                    <div class="price-item">
-                      <small>Less</small>
-                      <strong class="mono blurred-price" style="color:#ef4444">-₹250</strong>
-                    </div>
-                    <div class="price-item">
-                      <small>You Get</small>
-                      <strong class="mono blurred-price" style="color:#22c55e">₹749</strong>
-                    </div>
-                  </div>
-                  <div class="deal-actions">
-                    <a href="login.html?next=deals.html" class="deal-btn login-lock">🔒 Login to View Price & Request Deal</a>
-                  </div>
-                </div>
-              </div>
-            </div>
-          `;
-        }
+      wrap.innerHTML = filteredDeals.map((d, idx) => {
+        const isClosed = String(d.status || 'active').toLowerCase() !== 'active';
+        const thumb = resolveThumb(d.imageUrl, 'w400');
+        const safeTitle = SD.escapeHtml(d.title.replace(/'/g, "\\'"));
+        const cleanInst = (d.instructions || '').replace(/\s*\[(Valid Till|Slots):[^\]]+\]/ig, '').trim();
 
         return `
-          <div class="deal-card">
-            <div class="deal-img-wrap">
-              <span class="platform-tag">${SD.escapeHtml(d.platform)}</span>
-              ${imgHtml}
-            </div>
-            <div class="deal-body">
-              <div>
-                <div class="deal-title" title="${SD.escapeHtml(d.title)}">${SD.escapeHtml(d.title)}</div>
-                <div class="deal-inst">${SD.escapeHtml(d.instructions || 'Standard review/rating guidelines apply.')}</div>
+          <div class="deal-card" style="opacity:${isClosed ? '0.68' : '1'};border-color:${isClosed ? 'rgba(239,68,68,0.45)' : 'var(--border-color)'};">
+            <div>
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+                <span style="font-size:0.62rem;font-weight:800;color:var(--accent);background:var(--accent-glow);padding:2px 7px;border-radius:5px;text-transform:uppercase;">
+                  ${SD.escapeHtml(d.platform)}
+                </span>
+                ${isClosed
+                  ? `<span class="mono" style="font-size:0.6rem;background:rgba(239,68,68,0.2);color:#ef4444;padding:2px 6px;border-radius:5px;font-weight:900;">🔴 DEAL OVER</span>`
+                  : `<span class="mono" style="font-size:0.6rem;color:#22c55e;font-weight:800;">🟢 LIVE</span>`}
               </div>
-              <div>
-                <div class="price-strip">
-                  <div class="price-item">
-                    <small>Price</small>
-                    <strong class="mono">${SD.formatCurrency(d.price)}</strong>
-                  </div>
-                  <div class="price-item">
-                    <small>Less</small>
-                    <strong class="mono" style="color:#ef4444">-${SD.formatCurrency(d.lessAmount)}</strong>
-                  </div>
-                  <div class="price-item">
-                    <small>You Get</small>
-                    <strong class="mono" style="color:#22c55e">${SD.formatCurrency(d.youGet)}</strong>
-                  </div>
+
+              <div style="display:flex;gap:10px;align-items:center;">
+                <div class="deal-thumb" onclick="openDealGallery(${idx})" title="Tap to zoom & swipe">
+                  ${thumb ? `<img src="${SD.escapeHtml(thumb)}" alt="" loading="lazy" />` : `<span style="font-size:1.4rem;">🛍️</span>`}
                 </div>
-                <div class="deal-actions">
-                  ${d.productUrl ? `<a href="${SD.escapeHtml(d.productUrl)}" target="_blank" rel="noopener" class="btn" style="padding:9px 12px;">🔗 Product</a>` : ''}
-                  <button class="deal-btn request" onclick="requestDealNow('${SD.escapeHtml(d.dealId)}', '${SD.escapeHtml(d.title.replace(/'/g, "\\'"))}', this)">
-                    ⚡ Request Deal
-                  </button>
+                <div style="min-width:0;flex:1;">
+                  <div style="font-weight:800;font-size:0.8rem;line-height:1.25;margin-bottom:3px;">${SD.escapeHtml(d.title)}</div>
+                  ${cleanInst ? `<div style="font-size:0.67rem;color:var(--text-secondary);">${SD.escapeHtml(cleanInst)}</div>` : ''}
                 </div>
+              </div>
+            </div>
+
+            <div>
+              ${Number(d.price) > 0 ? `
+                <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:4px;background:var(--bg-primary);padding:5px;border-radius:7px;margin-bottom:6px;text-align:center;font-size:0.7rem;">
+                  <div><small style="font-size:0.54rem;color:var(--text-muted);display:block;">Price</small><strong class="mono">${SD.formatCurrency(d.price)}</strong></div>
+                  <div><small style="font-size:0.54rem;color:var(--text-muted);display:block;">Less</small><strong class="mono" style="color:#dc2626;">-${SD.formatCurrency(d.lessAmount)}</strong></div>
+                  <div><small style="font-size:0.54rem;color:var(--text-muted);display:block;">You Get</small><strong class="mono" style="color:#16a34a;">${SD.formatCurrency(d.youGet)}</strong></div>
+                </div>
+              ` : ''}
+              <div style="display:flex;gap:5px;">
+                ${!isClosed && d.productUrl ? `<a href="${SD.escapeHtml(d.productUrl)}" target="_blank" class="nav-pill" style="color:var(--cyan);">🔗 Link</a>` : ''}
+                <button type="button" ${isClosed ? 'disabled' : ''} class="nav-pill primary" style="flex:1;justify-content:center;padding:7px;" onclick="requestDealDirect('${SD.escapeHtml(d.dealId)}','${safeTitle}',this)">
+                  ${isClosed ? '🔴 Closed' : '⚡ Request Deal'}
+                </button>
+                <button type="button" class="nav-pill" style="color:#22c55e;" onclick="askDealWaByIdx(${idx})">🟢 WA</button>
               </div>
             </div>
           </div>
@@ -444,51 +226,78 @@
       }).join('');
     }
 
-    async function requestDealNow(dealId, dealTitle, btnEl) {
-      const user = SD.getUser();
-      if (!user) {
-        window.location.href = 'login.html?next=deals.html';
-        return;
-      }
-      btnEl.disabled = true;
-      btnEl.textContent = 'Sending...';
-
-      const res = await SD.api('requestDeal', {
-        dealId: dealId,
-        dealTitle: dealTitle,
-        buyerName: user.name,
-        buyerMobile: user.mobile
-      });
-
-      if (res && res.success) {
-        btnEl.textContent = '✓ Requested';
-        btnEl.style.background = '#16a34a';
-        btnEl.style.color = '#ffffff';
-        SD.toast(res.message, 'success');
-      } else {
-        btnEl.disabled = false;
-        btnEl.textContent = '⚡ Request Deal';
-        SD.toast(res?.error || 'Could not request deal.', 'error');
-      }
+    function openDealGallery(idx) {
+      if (!filteredDeals.length) return;
+      dgIdx = (idx + filteredDeals.length) % filteredDeals.length;
+      dgScale = 1;
+      const d = filteredDeals[dgIdx];
+      const isClosed = String(d.status || 'active').toLowerCase() !== 'active';
+      const img = document.getElementById('dgImg');
+      img.style.transform = 'scale(1)';
+      img.src = resolveThumb(d.imageUrl, 'w1000');
+      document.getElementById('dgTitle').textContent = d.title;
+      document.getElementById('dgCounter').textContent = `Deal ${dgIdx + 1} of ${filteredDeals.length} (${d.platform})`;
+      document.getElementById('dgPriceInfo').textContent = Number(d.price) > 0
+        ? `Price: ₹${d.price} | Less: -₹${d.lessAmount} | You Get: ₹${d.youGet}`
+        : (isClosed ? '🔴 DEAL OVER / CLOSED' : '📸 Tap Request Deal or WA to get link');
+      const rBtn = document.getElementById('dgReqBtn');
+      rBtn.disabled = isClosed;
+      rBtn.textContent = isClosed ? '🔴 Closed' : '⚡ Request Deal';
+      document.getElementById('dealGalleryModal').classList.add('open');
     }
 
-    // Load Deals
-    SD.api('getPublicDeals', {}, {
-      useCache: true,
-      onCached: cached => {
-        if (cached && cached.deals) {
-          allDeals = cached.deals;
-          isUserLoggedIn = Boolean(cached.isLoggedIn);
-          renderDeals();
-        }
+    function dgStep(dir) { openDealGallery(dgIdx + dir); }
+    function dgAdjustZoom(d) { dgScale = Math.min(3, Math.max(1, dgScale + d)); document.getElementById('dgImg').style.transform = `scale(${dgScale})`; }
+    function dgToggleZoom() { dgScale = dgScale > 1 ? 1 : 2.2; document.getElementById('dgImg').style.transform = `scale(${dgScale})`; }
+    function dgTouchStart(e) { if (e.touches?.length === 1) dgStartX = e.touches[0].clientX; }
+    function dgTouchEnd(e) {
+      if (dgScale > 1) return;
+      const dx = (e.changedTouches?.[0]?.clientX || dgStartX) - dgStartX;
+      if (Math.abs(dx) > 50) dgStep(dx < 0 ? 1 : -1);
+    }
+
+    async function requestDealDirect(dealId, title, btn) {
+      if (!SD.getUser()) {
+        askDealWaText(`👋 *Hi SanDeal Admin, I want this Deal:*\n🛍️ *Deal:* ${title}\n🆔 *ID:* ${dealId}`);
+        return;
       }
-    }).then(fresh => {
-      if (fresh && fresh.success) {
-        allDeals = fresh.deals || [];
-        isUserLoggedIn = Boolean(fresh.isLoggedIn);
-        renderDeals();
+      btn.disabled = true; btn.textContent = '...';
+      const res = await SD.api('requestDeal', { dealId, dealTitle: title });
+      if (res?.success) { btn.textContent = '✓ Requested'; SD.toast(res.message, 'success'); }
+      else { btn.disabled = false; btn.textContent = '⚡ Request Deal'; SD.toast(res?.error || 'Error', 'error'); }
+    }
+
+    function requestCurrentGalleryDeal() {
+      const d = filteredDeals[dgIdx];
+      if (d) requestDealDirect(d.dealId, d.title, document.getElementById('dgReqBtn'));
+    }
+
+    function askDealWaByIdx(idx) {
+      const d = filteredDeals[idx];
+      if (!d) return;
+      askDealWaText(`👋 *Hi SanDeal Admin, Deal Inquiry:*\n🛍️ *Product:* ${d.title}\n🌐 *Platform:* ${d.platform}\n🆔 *Deal ID:* ${d.dealId}\nPlease share the deal link.`);
+    }
+
+    function askCurrentDealOnWa() { askDealWaByIdx(dgIdx); }
+
+    function askDealWaText(msg) {
+      window.open(`https://wa.me/917004984949?text=${encodeURIComponent(msg)}`, '_blank');
+    }
+
+    async function initDealsPage() {
+      const u = SD.getUser();
+      if (u) {
+        const b = document.getElementById('dealsTopDashBtn');
+        b.textContent = `⚡ ${u.name.split(' ')[0]}'s Panel`;
+        b.href = u.role === 'admin' ? 'admin-dashboard.html' : (u.role === 'mediator' ? 'mediator-dashboard.html' : 'buyer-dashboard.html');
       }
-    });
+      const res = await SD.api('getDeals');
+      if (res?.success) {
+        allDeals = res.deals || [];
+        renderDealsList();
+      }
+    }
+    initDealsPage();
   </script>
 </body>
 </html>
