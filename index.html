@@ -3,520 +3,344 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>SastaDeal — Personal Order & Deal Tracker</title>
+  <title>SanDeal — Verified Order & Deal Tracker</title>
+  <link rel="manifest" href="manifest.json" />
   <script src="_config.js"></script>
   <style>
-    /* Navbar */
     .navbar {
-      position: sticky;
-      top: 0;
-      z-index: 100;
-      background: var(--bg-glass);
-      backdrop-filter: blur(14px);
+      position: sticky; top: 0; z-index: 150;
+      background: var(--bg-glass); backdrop-filter: blur(16px);
       border-bottom: 1px solid var(--border-color);
-      padding: 14px 24px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
+      padding: 7px 10px; display: flex; align-items: center; justify-content: space-between; gap: 6px;
     }
-    .brand {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      text-decoration: none;
-      color: var(--text-primary);
-      font-weight: 800;
-      font-size: 1.25rem;
-      letter-spacing: -0.02em;
-    }
+    .brand { display: flex; align-items: center; gap: 6px; text-decoration: none; color: var(--text-primary); font-weight: 800; font-size: 0.92rem; }
     .brand-badge {
-      width: 38px;
-      height: 38px;
-      border-radius: 10px;
-      background: linear-gradient(135deg, var(--accent), #9f6e3d);
-      color: #0f172a;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: 900;
-      font-size: 1.1rem;
-      box-shadow: 0 4px 14px var(--accent-glow);
+      width: 26px; height: 26px; border-radius: 7px;
+      background: linear-gradient(135deg, var(--accent), #9f6e3d); color: #0b1120;
+      display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 0.74rem;
     }
-    .nav-links {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      flex-wrap: wrap;
+    .nav-actions { display: flex; align-items: center; gap: 5px; }
+    .nav-pill {
+      padding: 5px 9px; border-radius: 7px; border: 1px solid var(--border-color);
+      background: var(--bg-secondary); color: var(--text-primary);
+      font-size: 0.7rem; font-weight: 700; text-decoration: none; cursor: pointer;
+      display: inline-flex; align-items: center; gap: 4px; white-space: nowrap;
     }
-    .nav-btn {
-      padding: 8px 14px;
-      border-radius: 8px;
-      font-size: 0.875rem;
-      font-weight: 600;
-      text-decoration: none;
-      color: var(--text-secondary);
-      border: 1px solid transparent;
-      transition: all 0.2s ease;
-      cursor: pointer;
-      background: transparent;
+    .nav-pill.primary { background: var(--accent); color: #0b1120; border-color: transparent; font-weight: 800; }
+
+    .container { max-width: 920px; margin: 0 auto; padding: 10px 10px 60px; }
+
+    /* Auto-Gliding Live Deals Carousel */
+    .live-deals-box {
+      background: linear-gradient(135deg, rgba(212, 165, 116, 0.14), rgba(30, 41, 59, 0.75));
+      border: 1px solid var(--border-hover); border-radius: 12px; padding: 7px 10px; margin-bottom: 10px;
     }
-    .nav-btn:hover {
-      color: var(--text-primary);
-      background: var(--bg-secondary);
-      border-color: var(--border-color);
+    .live-dot {
+      width: 7px; height: 7px; border-radius: 50%; background: #22c55e;
+      display: inline-block; box-shadow: 0 0 8px #22c55e;
     }
-    .nav-btn.primary {
-      background: var(--accent);
-      color: var(--accent-text);
-      font-weight: 700;
+    .deals-carousel {
+      display: flex; gap: 7px; overflow-x: auto; padding-top: 6px; padding-bottom: 2px;
+      scroll-behavior: smooth; scrollbar-width: none;
     }
-    .nav-btn.primary:hover {
-      background: var(--accent-hover);
+    .deals-carousel::-webkit-scrollbar { display: none; }
+    .mini-deal-card {
+      flex: 0 0 165px; background: var(--bg-secondary); border: 1px solid var(--border-color);
+      border-radius: 9px; padding: 5px 7px; display: flex; align-items: center; gap: 7px; cursor: pointer;
+    }
+    .mini-deal-thumb {
+      width: 40px; height: 40px; border-radius: 6px; background: #fff;
+      display: flex; align-items: center; justify-content: center; overflow: hidden; flex-shrink: 0;
+    }
+    .mini-deal-thumb img { width: 100%; height: 100%; object-fit: contain; }
+
+    /* Compact Hero Search Card */
+    .hero-card {
+      background: var(--bg-secondary); border: 1px solid var(--border-color);
+      border-radius: 14px; padding: 16px 14px; text-align: center; margin-bottom: 10px;
+    }
+    .hero-badge {
+      display: inline-block; padding: 3px 9px; border-radius: 999px;
+      background: var(--accent-glow); color: var(--accent);
+      font-size: 0.62rem; font-weight: 800; text-transform: uppercase; margin-bottom: 6px;
+    }
+    .hero-title { font-size: 1.2rem; font-weight: 800; line-height: 1.25; margin-bottom: 5px; }
+    .hero-sub { font-size: 0.74rem; color: var(--text-secondary); margin-bottom: 12px; }
+    .track-form { display: flex; gap: 6px; max-width: 480px; margin: 0 auto; flex-wrap: wrap; }
+    .track-input {
+      flex: 1; min-width: 190px; padding: 9px 11px; border-radius: 8px;
+      border: 1px solid var(--border-color); background: var(--bg-primary);
+      color: var(--text-primary); font-size: 0.78rem; outline: none;
+    }
+    .track-btn {
+      padding: 9px 15px; border-radius: 8px; border: none;
+      background: var(--accent); color: #0b1120; font-weight: 800; font-size: 0.78rem; cursor: pointer;
     }
 
-    /* Container */
-    .container {
-      max-width: 1200px;
-      margin: 0 auto;
-      padding: 28px 20px 64px;
+    /* Ultra-Compact Public Stats Strip (No Refund Amount Exposed!) */
+    .stats-strip {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 12px;
+    }
+    .stat-mini {
+      background: var(--bg-secondary); border: 1px solid var(--border-color);
+      border-radius: 10px; padding: 8px 9px; text-align: center;
+    }
+    .stat-mini small { font-size: 0.54rem; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; display: block; }
+    .stat-mini strong { font-size: 0.92rem; font-weight: 800; font-family: 'JetBrains Mono', monospace; }
+
+    /* Compact Portal Cards */
+    .portal-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 8px; margin-bottom: 14px; }
+    .portal-card {
+      background: var(--bg-secondary); border: 1px solid var(--border-color);
+      border-radius: 12px; padding: 12px; text-decoration: none; color: var(--text-primary);
+      display: flex; align-items: center; gap: 10px; transition: border-color 0.18s;
+    }
+    .portal-card:hover { border-color: var(--accent); }
+    .portal-icon {
+      width: 38px; height: 38px; border-radius: 9px; background: var(--bg-primary);
+      display: flex; align-items: center; justify-content: center; font-size: 1.1rem; flex-shrink: 0;
     }
 
-    /* Highlights Banner */
-    .highlights-wrap {
-      margin-bottom: 24px;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
+    .modal-backdrop {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.78); backdrop-filter: blur(3px);
+      display: none; align-items: center; justify-content: center; z-index: 500; padding: 12px;
     }
-    .highlight-banner {
-      background: linear-gradient(90deg, var(--accent-glow), rgba(30,41,59,0.5));
-      border: 1px solid var(--border-hover);
-      border-left: 4px solid var(--accent);
-      border-radius: 12px;
-      padding: 12px 16px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-      font-size: 0.875rem;
-    }
-
-    /* Hero Section */
-    .hero {
-      text-align: center;
-      padding: 36px 20px 44px;
-      background: radial-gradient(circle at top, var(--accent-glow), transparent 68%);
-      border: 1px solid var(--border-color);
-      border-radius: 20px;
-      margin-bottom: 32px;
-    }
-    .hero-tag {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 5px 14px;
-      border-radius: 999px;
-      background: var(--accent-glow);
-      color: var(--accent);
-      font-size: 0.78rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      margin-bottom: 16px;
-    }
-    .hero h1 {
-      font-size: clamp(1.9rem, 4vw, 3rem);
-      font-weight: 800;
-      letter-spacing: -0.03em;
-      margin-bottom: 12px;
-      line-height: 1.15;
-    }
-    .hero p {
-      color: var(--text-secondary);
-      max-width: 620px;
-      margin: 0 auto 28px;
-      font-size: 1rem;
-    }
-
-    /* Public Track Search Box */
-    .track-box {
-      max-width: 580px;
-      margin: 0 auto;
-      background: var(--bg-secondary);
-      padding: 8px;
-      border-radius: 14px;
-      border: 1px solid var(--border-hover);
-      display: flex;
-      gap: 8px;
-      box-shadow: var(--shadow-lg);
-    }
-    .track-box input {
-      flex: 1;
-      background: transparent;
-      border: none;
-      padding: 12px 16px;
-      color: var(--text-primary);
-      font-size: 0.95rem;
-      outline: none;
-    }
-    .track-box button {
-      background: var(--accent);
-      color: var(--accent-text);
-      border: none;
-      padding: 12px 22px;
-      border-radius: 10px;
-      font-weight: 700;
-      cursor: pointer;
-      transition: background 0.2s;
-      white-space: nowrap;
-    }
-    .track-box button:hover {
-      background: var(--accent-hover);
-    }
-    .track-hint {
-      font-size: 0.76rem;
-      color: var(--text-muted);
-      margin-top: 10px;
-    }
-
-    /* Stats Bar (4 KPI Cards) */
-    .stats-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-      gap: 16px;
-      margin-bottom: 36px;
-    }
-    .stat-card {
-      background: var(--bg-secondary);
-      border: 1px solid var(--border-color);
-      border-radius: 14px;
-      padding: 20px;
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-      transition: transform 0.2s, border-color 0.2s;
-    }
-    .stat-card:hover {
-      transform: translateY(-2px);
-      border-color: var(--border-hover);
-    }
-    .stat-label {
-      font-size: 0.8rem;
-      font-weight: 600;
-      color: var(--text-secondary);
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
-    }
-    .stat-value {
-      font-size: 1.75rem;
-      font-weight: 800;
-      color: var(--text-primary);
-    }
-
-    /* Quick Access Cards */
-    .section-title {
-      font-size: 1.25rem;
-      font-weight: 700;
-      margin-bottom: 16px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-    .quick-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-      gap: 18px;
-      margin-bottom: 44px;
-    }
-    .quick-card {
-      background: var(--bg-secondary);
-      border: 1px solid var(--border-color);
-      border-radius: 16px;
-      padding: 24px;
-      text-decoration: none;
-      color: var(--text-primary);
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      gap: 14px;
-      transition: all 0.2s ease;
-    }
-    .quick-card:hover {
-      transform: translateY(-4px);
-      border-color: var(--accent);
-      box-shadow: var(--shadow-lg);
-    }
-    .quick-icon {
-      width: 46px;
-      height: 46px;
-      border-radius: 12px;
-      background: var(--accent-glow);
-      color: var(--accent);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 1.35rem;
-    }
-    .quick-card h3 {
-      font-size: 1.1rem;
-      font-weight: 700;
-      margin-bottom: 4px;
-    }
-    .quick-card p {
-      font-size: 0.85rem;
-      color: var(--text-secondary);
-    }
-    .quick-link {
-      font-size: 0.82rem;
-      font-weight: 700;
-      color: var(--accent);
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-
-    /* How It Works (4 Steps) */
-    .steps-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-      gap: 16px;
-      margin-bottom: 40px;
-    }
-    .step-card {
-      background: var(--bg-secondary);
-      border: 1px solid var(--border-color);
-      border-radius: 14px;
-      padding: 20px;
-      position: relative;
-    }
-    .step-num {
-      width: 30px;
-      height: 30px;
-      border-radius: 999px;
-      background: var(--accent);
-      color: var(--accent-text);
-      font-weight: 800;
-      font-size: 0.85rem;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin-bottom: 12px;
-    }
-    .step-card h4 {
-      font-size: 0.98rem;
-      margin-bottom: 6px;
-    }
-    .step-card p {
-      font-size: 0.83rem;
-      color: var(--text-secondary);
-    }
-
-    footer {
-      text-align: center;
-      padding: 24px;
-      border-top: 1px solid var(--border-color);
-      color: var(--text-muted);
-      font-size: 0.82rem;
-    }
-
-    @media (max-width: 640px) {
-      .track-box { flex-direction: column; }
-      .track-box button { width: 100%; }
-      .navbar { padding: 12px 16px; }
-    }
+    .modal-backdrop.open { display: flex; }
   </style>
 </head>
 <body>
 
-  <!-- Navbar -->
+  <!-- Compact Single-Row Navbar -->
   <nav class="navbar">
     <a href="index.html" class="brand">
       <div class="brand-badge">SD</div>
-      <div>
-        <div>SastaDeal</div>
-        <div style="font-size:0.7rem;color:var(--text-secondary);font-weight:500;">Order & Deal Tracker</div>
-      </div>
+      <span>SanDeal</span>
     </a>
-    <div class="nav-links">
-      <a href="deals.html" class="nav-btn">🔥 Live Deals</a>
-      <a href="track.html" class="nav-btn">📦 Track Order</a>
-      <button class="nav-btn" onclick="SD.toggleTheme()" title="Toggle Dark/Light Theme">🌓 Theme</button>
-      <a href="login.html" id="navAuthBtn" class="nav-btn primary">Login / Portal →</a>
+    <div class="nav-actions">
+      <button type="button" class="nav-pill" onclick="toggleSanDealPushAlerts(this)" title="Subscribe to Instant Deal Alerts">🔔 Alerts</button>
+      <a href="deals.html" class="nav-pill">🔥 Deals</a>
+      <a href="track.html" class="nav-pill">🔍 Track</a>
+      <button type="button" class="nav-pill" onclick="SD.toggleTheme()">🌓</button>
+      <a href="login.html" class="nav-pill primary" id="topDashBtn">🔐 Login</a>
     </div>
   </nav>
 
   <main class="container">
-    <!-- Dynamic Highlights Banner -->
-    <div id="highlightsContainer" class="highlights-wrap"></div>
+    <!-- Auto-Gliding Live Deals Carousel (Public + Logged-In) -->
+    <div class="live-deals-box" id="homeLiveDealsBox" style="display:none;">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <div style="display:flex;align-items:center;gap:6px;font-size:0.7rem;font-weight:800;">
+          <span class="live-dot"></span>
+          <span>SANDEAL LIVE DEALS (TAP PHOTO TO SWIPE)</span>
+        </div>
+        <a href="deals.html" style="color:var(--accent);font-size:0.7rem;font-weight:800;text-decoration:none;">View All →</a>
+      </div>
+      <div class="deals-carousel" id="homeDealsCarousel"></div>
+    </div>
 
-    <!-- Hero Section with Instant Track Input -->
-    <section class="hero">
-      <div class="hero-tag">⚡ Verified Order Deal Platform</div>
-      <h1>Track Your Orders, Refunds &<br><span style="color:var(--accent)">Exclusive Deals in Real-Time</span></h1>
-      <p>Seamless tracking for Amazon, Flipkart, Blinkit, Myntra & Meesho review and rating deals. Instant updates from order placement to bank payout.</p>
-
-      <form class="track-box" onsubmit="handleQuickTrack(event)">
-        <input
-          type="text"
-          id="quickTrackInput"
-          class="mono"
-          placeholder="Enter Platform Order ID (e.g. 404-2759471-7602761)"
-          required
-        />
-        <button type="submit">🔍 Track Order</button>
+    <!-- Compact Hero Search Card -->
+    <section class="hero-card">
+      <span class="hero-badge">⚡ Verified Order & Deal Platform</span>
+      <h1 class="hero-title">Track Your Orders & <span style="color:var(--accent);">Exclusive Deals</span></h1>
+      <p class="hero-sub">Seamless tracking for Amazon, Flipkart, Myntra & Meesho orders from placement to payout.</p>
+      <form class="track-form" onsubmit="goQuickTrack(event)">
+        <input type="text" id="homeTrackInput" class="track-input mono" placeholder="Enter Platform Order ID (e.g. 404-2759471...)" required />
+        <button type="submit" class="track-btn">🔍 Track</button>
       </form>
-      <div class="track-hint">Use your Amazon / Flipkart / Blinkit Platform Order ID (No login required)</div>
     </section>
 
-    <!-- Live Stats Bar -->
-    <section class="stats-grid">
-      <div class="stat-card">
-        <span class="stat-label">📦 Total Orders</span>
-        <span class="stat-value mono" id="statTotalOrders">—</span>
+    <!-- Admin Control to Show/Hide Public Stats Strip -->
+    <div id="adminStatsToggleRow" style="display:none;justify-content:flex-end;margin-bottom:5px;">
+      <button type="button" class="nav-pill" style="font-size:0.62rem;padding:3px 8px;" onclick="togglePublicStatsVisibility()">
+        👁️ Show / Hide Public Counter Strip
+      </button>
+    </div>
+
+    <!-- Compact 3-Box Counter Strip (No Total Refund Amount Exposed!) -->
+    <section class="stats-strip" id="publicStatsStrip">
+      <div class="stat-mini">
+        <small>📦 Total Orders</small>
+        <strong id="stTotalOrders" style="color:var(--text-primary);">—</strong>
       </div>
-      <div class="stat-card">
-        <span class="stat-label">💰 Total Refund Processed</span>
-        <span class="stat-value mono" style="color:#22c55e" id="statTotalRefund">—</span>
+      <div class="stat-mini">
+        <small>⏳ Active / Pending</small>
+        <strong id="stPendingOrders" style="color:#f59e0b;">—</strong>
       </div>
-      <div class="stat-card">
-        <span class="stat-label">⏳ Active / Pending Orders</span>
-        <span class="stat-value mono" style="color:#f59e0b" id="statPending">—</span>
-      </div>
-      <div class="stat-card">
-        <span class="stat-label">⚡ Ordered Today</span>
-        <span class="stat-value mono" style="color:var(--accent)" id="statToday">—</span>
+      <div class="stat-mini">
+        <small>⚡ Ordered Today</small>
+        <strong id="stTodayOrders" style="color:#22c55e;">—</strong>
       </div>
     </section>
 
     <!-- Quick Access Portals -->
-    <div class="section-title">
-      <span>Quick Access Portals</span>
-    </div>
-    <section class="quick-grid">
-      <a href="deals.html" class="quick-card">
+    <div style="font-size:0.75rem;font-weight:800;color:var(--text-secondary);text-transform:uppercase;margin-bottom:6px;">Quick Access Portals</div>
+    <section class="portal-grid">
+      <a href="deals.html" class="portal-card">
+        <div class="portal-icon">🔥</div>
         <div>
-          <div class="quick-icon">🛍️</div>
-          <h3 style="margin-top:14px;">Explore Active Deals</h3>
-          <p>Browse current Amazon, Flipkart & Blinkit deals with instant cashback & less offers.</p>
+          <div style="font-weight:800;font-size:0.84rem;">Explore Active Deals</div>
+          <div style="font-size:0.7rem;color:var(--text-secondary);">Swipe deal gallery & request instant links.</div>
         </div>
-        <div class="quick-link">View Deals Grid →</div>
       </a>
-
-      <a href="track.html" class="quick-card">
+      <a href="track.html" class="portal-card">
+        <div class="portal-icon">📍</div>
         <div>
-          <div class="quick-icon">📍</div>
-          <h3 style="margin-top:14px;">Public Order Tracker</h3>
-          <p>Check your 6-step order timeline, refund form date, and payout settlement status.</p>
+          <div style="font-weight:800;font-size:0.84rem;">Public Order Tracker</div>
+          <div style="font-size:0.7rem;color:var(--text-secondary);">Check your 6-step order & refund timeline.</div>
         </div>
-        <div class="quick-link">Track by Order ID →</div>
       </a>
-
-      <a href="login.html?role=buyer" class="quick-card">
+      <a href="login.html?role=buyer" class="portal-card">
+        <div class="portal-icon">👤</div>
         <div>
-          <div class="quick-icon">👤</div>
-          <h3 style="margin-top:14px;">Buyer Dashboard</h3>
-          <p>View all orders linked to your Main/Sub accounts, submit new orders & export statements.</p>
+          <div style="font-weight:800;font-size:0.84rem;">Buyer Dashboard</div>
+          <div style="font-size:0.7rem;color:var(--text-secondary);">View linked accounts, submit orders & proofs.</div>
         </div>
-        <div class="quick-link">Buyer Login →</div>
       </a>
-
-      <a href="login.html?role=mediator" class="quick-card">
+      <a href="login.html?role=admin" class="portal-card">
+        <div class="portal-icon">🤝</div>
         <div>
-          <div class="quick-icon">🤝</div>
-          <h3 style="margin-top:14px;">Mediator & Admin Portal</h3>
-          <p>Mediators track deal refunds & notes. Admin manages full operations, payouts & alerts.</p>
+          <div style="font-weight:800;font-size:0.84rem;">Mediator & Admin Portal</div>
+          <div style="font-size:0.7rem;color:var(--text-secondary);">Manage settlements, deals & partner passbook.</div>
         </div>
-        <div class="quick-link">Partner / Admin Login →</div>
       </a>
     </section>
 
-    <!-- How It Works (4 Steps) -->
-    <div class="section-title">
-      <span>How SastaDeal Works</span>
-    </div>
-    <section class="steps-grid">
-      <div class="step-card">
-        <div class="step-num">1</div>
-        <h4>Select & Order Deal</h4>
-        <p>Pick an active deal from the Deals page or get an order placed through your linked buyer account.</p>
-      </div>
-      <div class="step-card">
-        <div class="step-num">2</div>
-        <h4>Submit Order Details</h4>
-        <p>Log your Platform Order ID and screenshot in the Buyer Panel so tracking starts immediately.</p>
-      </div>
-      <div class="step-card">
-        <div class="step-num">3</div>
-        <h4>Delivery & Review Live</h4>
-        <p>Receive the product, submit the rating/review as per guidelines, and Refund Form gets filled.</p>
-      </div>
-      <div class="step-card">
-        <div class="step-num">4</div>
-        <h4>Fast Refund Settlement</h4>
-        <p>Once refund is approved, your Buyer ToGet amount is paid directly via UPI/Bank with WhatsApp receipt.</p>
-      </div>
-    </section>
+    <footer style="text-align:center;font-size:0.68rem;color:var(--text-muted);padding-top:12px;border-top:1px solid var(--border-color);">
+      © 2026 SanDeal — Verified Order & Deal Tracker. ✨ Thanks for your trust with SanDeal ♥️
+    </footer>
   </main>
 
-  <footer>
-    © <span id="yearSpan"></span> SastaDeal — Personal Order Deal Tracker. Built for fast, transparent settlements.
-  </footer>
+  <!-- Full-Screen Interactive Swipe Deal Gallery Modal -->
+  <div class="modal-backdrop" id="homeGalleryModal" onclick="if(event.target===this)this.classList.remove('open')">
+    <div style="width:94vw;max-width:440px;background:var(--bg-secondary);border:1px solid var(--border-color);border-radius:16px;padding:12px;text-align:center;" onclick="event.stopPropagation()">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+        <span class="mono" style="font-size:0.7rem;color:var(--accent);font-weight:800;" id="hgCounter">Deal Preview</span>
+        <div style="display:flex;gap:5px;">
+          <button type="button" class="nav-pill" onclick="hgZoom(0.4)">🔍+</button>
+          <button type="button" class="nav-pill" onclick="hgZoom(-0.4)">🔍-</button>
+          <button type="button" class="nav-pill" style="color:#ef4444;" onclick="document.getElementById('homeGalleryModal').classList.remove('open')">✕</button>
+        </div>
+      </div>
+      <div style="width:100%;height:56vh;background:#fff;border-radius:10px;overflow:auto;display:flex;align-items:center;justify-content:center;" ontouchstart="hgTouchStart(event)" ontouchend="hgTouchEnd(event)">
+        <img id="hgImg" src="" alt="" ondblclick="hgToggleZoom()" style="max-width:100%;max-height:100%;object-fit:contain;transition:transform 0.2s;" />
+      </div>
+      <div style="margin-top:8px;font-weight:800;font-size:0.84rem;" id="hgTitle">Deal</div>
+      <div style="display:flex;gap:6px;margin-top:10px;">
+        <button type="button" class="nav-pill" onclick="hgStep(-1)">◀ Prev</button>
+        <a href="deals.html" class="nav-pill primary" style="flex:1;justify-content:center;">⚡ Open in Deals Page</a>
+        <button type="button" class="nav-pill" onclick="hgStep(1)">Next ▶</button>
+      </div>
+    </div>
+  </div>
 
   <script>
-    document.getElementById('yearSpan').textContent = new Date().getFullYear();
+    let homeDeals = [];
+    let hgIdx = 0;
+    let hgScale = 1;
+    let hgStartX = 0;
 
-    // Update Navbar if already logged in
-    (function checkSessionNav() {
-      const user = SD.getUser();
-      const btn = document.getElementById('navAuthBtn');
-      if (user && SD.getToken()) {
-        const dashMap = {
-          admin: 'admin-dashboard.html',
-          buyer: 'buyer-dashboard.html',
-          mediator: 'mediator-dashboard.html'
-        };
-        btn.href = dashMap[user.role] || 'login.html';
-        btn.textContent = `⚡ ${user.name.split(' ')[0]}'s Dashboard`;
-      }
-    })();
+    function resolveImg(url) {
+      if (!url) return '';
+      const s = String(url).trim();
+      const m1 = s.match(/[?&]id=([a-zA-Z0-9_-]{15,})/);
+      const m2 = s.match(/\/file\/d\/([a-zA-Z0-9_-]{15,})/);
+      const id = (m1 && m1[1]) || (m2 && m2[1]);
+      return id ? `https://drive.google.com/thumbnail?id=${id}&sz=w800` : s;
+    }
 
-    function handleQuickTrack(e) {
+    function goQuickTrack(e) {
       e.preventDefault();
-      const val = document.getElementById('quickTrackInput').value.trim();
-      if (!val) return;
-      if (/^\d{1,6}$/.test(val)) {
-        SD.toast('Please enter the Platform Order ID (e.g. 404-xxxx), not the serial Order No.', 'warning');
-        return;
+      const q = document.getElementById('homeTrackInput').value.trim();
+      if (q) window.location.href = `track.html?orderId=${encodeURIComponent(q)}`;
+    }
+
+    function togglePublicStatsVisibility() {
+      const cur = localStorage.getItem('sandeal_hide_pub_stats') === '1';
+      localStorage.setItem('sandeal_hide_pub_stats', cur ? '0' : '1');
+      applyStatsVisibility();
+    }
+
+    function applyStatsVisibility() {
+      const hide = localStorage.getItem('sandeal_hide_pub_stats') === '1';
+      document.getElementById('publicStatsStrip').style.display = hide ? 'none' : 'grid';
+    }
+
+    function openHomeGallery(idx) {
+      if (!homeDeals.length) return;
+      hgIdx = (idx + homeDeals.length) % homeDeals.length;
+      hgScale = 1;
+      const d = homeDeals[hgIdx];
+      const img = document.getElementById('hgImg');
+      img.style.transform = 'scale(1)';
+      img.src = resolveImg(d.imageUrl);
+      document.getElementById('hgTitle').textContent = d.title;
+      document.getElementById('hgCounter').textContent = `Deal ${hgIdx + 1} of ${homeDeals.length} (${d.platform})`;
+      document.getElementById('homeGalleryModal').classList.add('open');
+    }
+    function hgStep(dir) { openHomeGallery(hgIdx + dir); }
+    function hgZoom(d) { hgScale = Math.min(3, Math.max(1, hgScale + d)); document.getElementById('hgImg').style.transform = `scale(${hgScale})`; }
+    function hgToggleZoom() { hgScale = hgScale > 1 ? 1 : 2.2; document.getElementById('hgImg').style.transform = `scale(${hgScale})`; }
+    function hgTouchStart(e) { if (e.touches?.length === 1) hgStartX = e.touches[0].clientX; }
+    function hgTouchEnd(e) {
+      if (hgScale > 1) return;
+      const dx = (e.changedTouches?.[0]?.clientX || hgStartX) - hgStartX;
+      if (Math.abs(dx) > 50) hgStep(dx < 0 ? 1 : -1);
+    }
+
+    async function initHome() {
+      applyStatsVisibility();
+      const u = SD.getUser();
+      if (u) {
+        const dashBtn = document.getElementById('topDashBtn');
+        dashBtn.textContent = `⚡ ${u.name.split(' ')[0]}'s Panel`;
+        dashBtn.href = u.role === 'admin' ? 'admin-dashboard.html' : (u.role === 'mediator' ? 'mediator-dashboard.html' : 'buyer-dashboard.html');
+        if (u.role === 'admin') document.getElementById('adminStatsToggleRow').style.display = 'flex';
       }
-      window.location.href = `track.html?id=${encodeURIComponent(val)}`;
+
+      const [stRes, dlRes] = await Promise.all([
+        SD.api('getPublicStats'),
+        SD.api('getDeals')
+      ]);
+
+      if (stRes?.success && stRes.stats) {
+        document.getElementById('stTotalOrders').textContent = (stRes.stats.totalOrders || 0).toLocaleString('en-IN');
+        document.getElementById('stPendingOrders').textContent = (stRes.stats.pendingOrders || 0).toLocaleString('en-IN');
+        document.getElementById('stTodayOrders').textContent = (stRes.stats.todayOrders || 0).toLocaleString('en-IN');
+      }
+
+      if (dlRes?.success && dlRes.deals?.length) {
+        homeDeals = dlRes.deals.filter(d => String(d.status || 'active').toLowerCase() === 'active');
+        if (window.checkNewDealsForPushAlert) window.checkNewDealsForPushAlert(homeDeals);
+        if (homeDeals.length) {
+          document.getElementById('homeLiveDealsBox').style.display = 'block';
+          const car = document.getElementById('homeDealsCarousel');
+          car.innerHTML = homeDeals.slice(0, 15).map((d, i) => {
+            const thumb = resolveImg(d.imageUrl);
+            const shortT = d.title.length > 19 ? d.title.slice(0, 19) + '…' : d.title;
+            return `
+              <div class="mini-deal-card" onclick="openHomeGallery(${i})">
+                <div class="mini-deal-thumb">
+                  ${thumb ? `<img src="${SD.escapeHtml(thumb)}" alt="" loading="lazy" />` : '🛍️'}
+                </div>
+                <div style="min-width:0;flex:1;">
+                  <div style="font-size:0.65rem;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${SD.escapeHtml(shortT)}</div>
+                  <div style="display:flex;justify-content:space-between;align-items:center;margin-top:2px;">
+                    <span class="mono" style="font-size:0.62rem;color:#22c55e;font-weight:800;">${Number(d.price) > 0 ? '₹' + d.youGet : '📸 View'}</span>
+                    <span style="font-size:0.52rem;background:var(--accent-glow);color:var(--accent);padding:1px 4px;border-radius:4px;font-weight:700;">${SD.escapeHtml(d.platform.slice(0, 7))}</span>
+                  </div>
+                </div>
+              </div>
+            `;
+          }).join('');
+
+          setInterval(() => {
+            if (car.scrollLeft + car.clientWidth >= car.scrollWidth - 10) car.scrollTo({ left: 0, behavior: 'smooth' });
+            else car.scrollBy({ left: 175, behavior: 'smooth' });
+          }, 3000);
+        }
+      }
     }
-
-    function renderHomeData(res) {
-      if (!res || !res.success) return;
-      const s = res.stats || {};
-      document.getElementById('statTotalOrders').textContent = (s.totalOrders || 0).toLocaleString('en-IN');
-      document.getElementById('statTotalRefund').textContent = SD.formatCurrency(s.totalRefund || 0);
-      document.getElementById('statPending').textContent = (s.pendingOrders || 0).toLocaleString('en-IN');
-      document.getElementById('statToday').textContent = (s.todayOrders || 0).toLocaleString('en-IN');
-
-      const hlWrap = document.getElementById('highlightsContainer');
-      const highlights = res.highlights || [];
-      hlWrap.innerHTML = highlights.map(h => `
-        <div class="highlight-banner">
-          <div>
-            <strong style="color:var(--accent);margin-right:8px;">${SD.escapeHtml(h.title)}:</strong>
-            <span>${SD.escapeHtml(h.message)}</span>
-          </div>
-          <span class="mono" style="font-size:0.75rem;color:var(--text-muted);white-space:nowrap;">${SD.escapeHtml(h.date)}</span>
-        </div>
-      `).join('');
-    }
-
-    // Load live stats with instant cache fallback
-    SD.api('getPublicHomeData', {}, {
-      useCache: true,
-      onCached: cached => renderHomeData(cached)
-    }).then(fresh => renderHomeData(fresh));
+    initHome();
   </script>
 </body>
 </html>
