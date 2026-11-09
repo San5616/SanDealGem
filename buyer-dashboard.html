@@ -1970,34 +1970,12 @@ if (window.checkNewDealsForPushAlert) window.checkNewDealsForPushAlert(buyerDeal
       renderBuyerOrders();
     }
 
-    function updateBuyerKPIs(list) {
-      let totalAmt = 0, receivedAmt = 0, pendingAmt = 0, pendingFormCount = 0, paidCount = 0;
-
-      list.forEach(o => {
-        const lowSt = String(o.orderStatus || '').toLowerCase();
-        const isCancelled = lowSt.includes('cancel');
-        const isPaid = String(o.paymentStatus || '').toLowerCase() === 'paid';
-        totalAmt += Number(o.pricePaid) || 0;
-
-        if (isPaid) {
-          paidCount++;
-          receivedAmt += (o.buyerActualGot !== null ? Number(o.buyerActualGot) : Number(o.buyerToGet)) || 0;
-        } else if (!isCancelled) {
-          pendingAmt += Number(o.buyerToGet) || 0;
-        }
-
-        if (!o.refundFormDate && !isCancelled && lowSt !== 'got refund') {
-          pendingFormCount++;
-        }
-      });
-
-      document.getElementById('kpiTotalOrders').textContent = list.length.toLocaleString('en-IN');
-      document.getElementById('kpiOrderAmount').textContent = SD.formatCurrency(totalAmt);
-      document.getElementById('kpiReceived').textContent = SD.formatCurrency(receivedAmt);
-      document.getElementById('kpiPendingAmt').textContent = SD.formatCurrency(pendingAmt);
-      document.getElementById('kpiPendingForm').textContent = pendingFormCount.toLocaleString('en-IN');
-      document.getElementById('kpiPaidCount').textContent = paidCount.toLocaleString('en-IN');
+        function updateBuyerKPIs(list) {
+      if (typeof recomputeBuyerAccurateKPIs === 'function') {
+        recomputeBuyerAccurateKPIs(list);
+      }
     }
+
 
     function sortBuyerTable(field) {
       if (buyerSortField === field) buyerSortAsc = !buyerSortAsc;
@@ -2640,9 +2618,7 @@ if (window.checkNewDealsForPushAlert) window.checkNewDealsForPushAlert(buyerDeal
     }
 
     function clearBuyerOrderScreenshot() {
-      pendingBuyerSs = nul
-
-; 
+      pendingBuyerSs = null; 
       document.getElementById('noScreenshotFile').value = '';
       document.getElementById('noSsPreviewImg').src = '';
       document.getElementById('noSsPreviewWrap').style.display = 'none';
