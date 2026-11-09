@@ -1155,3 +1155,4 @@ window.detectSanDealCategories = function(titleStr, instStr = '') {
       }
     }
   };
+})();
