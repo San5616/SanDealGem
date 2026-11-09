@@ -1123,11 +1123,13 @@ window.detectSanDealCategories = function(titleStr, instStr = '') {
       else if (/meesho/i.test(cleanTxt)) foundPlat = 'Meesho';
       else if (/blinkit/i.test(cleanTxt)) foundPlat = 'Blinkit';
 
-      if (foundId && document.getElementById(targetOrderIdInputId)) {
-        const el = document.getElementById(targetOrderIdInputId);
-        el.value = foundId;
-        el.style.borderColor = '#22c55e';
-      }
+          if (foundId && document.getElementById(targetOrderIdInputId)) {
+      const el = document.getElementById(targetOrderIdInputId);
+      el.value = foundId;
+      el.style.borderColor = '#22c55e';
+      el.dispatchEvent(new Event('input'));
+    }
+
       if (foundPrice && document.getElementById(targetPriceInputId)) {
         const el = document.getElementById(targetPriceInputId);
         el.value = foundPrice;
