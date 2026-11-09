@@ -1081,10 +1081,17 @@ window.detectSanDealCategories = function(titleStr, instStr = '') {
     SD.toast('🔊 बोलकर जानकारी दी जा रही है...', 'info', 3000);
   };
 
-  // 5. Feature #1: Lightweight Client-Side OCR Order Screenshot Reader (Tesseract CDN on demand)
-  window.scanSanDealScreenshotOCR = async function(base64Img, targetOrderIdInputId, targetPriceInputId) {
+    // 5. Feature #1: Smart Auto-OCR Screenshot Reader (Auto-fills Order ID, Price & Platform + Shows Match Status)
+  window.scanSanDealScreenshotOCR = async function(base64Img, targetOrderIdInputId, targetPriceInputId, targetPlatformInputId, statusBannerId) {
     if (!base64Img) { SD.toast('Please select an order screenshot first!', 'warning'); return; }
-    SD.toast('🔍 AI Scanning Screenshot for Order ID & Price...', 'info', 4000);
+    const banner = statusBannerId ? document.getElementById(statusBannerId) : null;
+    if (banner) {
+      banner.style.display = 'block';
+      banner.style.color = 'var(--accent)';
+      banner.innerHTML = '⏳ <strong>AI OCR Scanning Screenshot...</strong> Reading Order ID, Price & Platform from image above...';
+    }
+    SD.toast('🔍 Scanning Screenshot for Order ID & Price...', 'info', 3000);
+
     try {
       if (!window.Tesseract) {
         await new Promise((res, rej) => {
@@ -1095,23 +1102,56 @@ window.detectSanDealCategories = function(titleStr, instStr = '') {
         });
       }
       const { data: { text } } = await window.Tesseract.recognize(base64Img, 'eng');
-      const idMatch = text.match(/\b\d{3}-\d{7}-\d{7}\b/) || text.match(/\bOD\d{14,22}\b/i) || text.match(/\bORD\d{8,16}\b/i);
-      const priceMatch = text.match(/(?:Total|Order Total|Grand Total|Amount|Rs\.?|INR|₹)\s*[:=-]?\s*([\d,]{2,7}(?:\.\d{1,2})?)/i);
+      const cleanTxt = String(text || '');
 
-      if (idMatch && document.getElementById(targetOrderIdInputId)) {
-        document.getElementById(targetOrderIdInputId).value = idMatch[0];
+      // 1. Detect Platform Order ID (Amazon 404-..., Flipkart OD..., Myntra/Meesho)
+      const idMatch = cleanTxt.match(/\b\d{3}\s*-\s*\d{7}\s*-\s*\d{7}\b/) ||
+                      cleanTxt.match(/\bOD\d{14,22}\b/i) ||
+                      cleanTxt.match(/\bORD\d{8,16}\b/i);
+      const foundId = idMatch ? idMatch[0].replace(/\s+/g, '') : '';
+
+      // 2. Detect Price Paid
+      const priceMatch = cleanTxt.match(/(?:Total|Order Total|Grand Total|Amount|Paid|Rs\.?|INR|₹)\s*[:=-]?\s*₹?\s*([\d,]{2,7}(?:\.\d{1,2})?)/i) ||
+                         cleanTxt.match(/₹\s*([\d,]{2,7}(?:\.\d{1,2})?)/);
+      const foundPrice = (priceMatch && priceMatch[1]) ? priceMatch[1].replace(/,/g, '') : '';
+
+      // 3. Auto-detect Platform
+      let foundPlat = '';
+      if (/\b\d{3}-\d{7}-\d{7}\b/.test(foundId) || /amazon/i.test(cleanTxt)) foundPlat = 'Amazon';
+      else if (/^OD\d+/i.test(foundId) || /flipkart/i.test(cleanTxt)) foundPlat = 'Flipkart';
+      else if (/myntra/i.test(cleanTxt)) foundPlat = 'Myntra';
+      else if (/meesho/i.test(cleanTxt)) foundPlat = 'Meesho';
+      else if (/blinkit/i.test(cleanTxt)) foundPlat = 'Blinkit';
+
+      if (foundId && document.getElementById(targetOrderIdInputId)) {
+        const el = document.getElementById(targetOrderIdInputId);
+        el.value = foundId;
+        el.style.borderColor = '#22c55e';
       }
-      if (priceMatch && priceMatch[1] && document.getElementById(targetPriceInputId)) {
-        document.getElementById(targetPriceInputId).value = priceMatch[1].replace(/,/g, '');
+      if (foundPrice && document.getElementById(targetPriceInputId)) {
+        const el = document.getElementById(targetPriceInputId);
+        el.value = foundPrice;
+        el.style.borderColor = '#22c55e';
         if (typeof calcAdminAddMath === 'function') calcAdminAddMath();
+        if (typeof calcBuyerAddMath === 'function') calcBuyerAddMath();
       }
-      if (idMatch || priceMatch) {
-        SD.toast(`✅ OCR Auto-Filled: ${idMatch ? 'ID ' + idMatch[0] : ''} ${priceMatch ? '₹' + priceMatch[1] : ''}`, 'success', 4500);
-      } else {
-        SD.toast('Could not clearly read Order ID from image. Please type or verify manually.', 'warning');
+      if (foundPlat && targetPlatformInputId && document.getElementById(targetPlatformInputId)) {
+        document.getElementById(targetPlatformInputId).value = foundPlat;
+      }
+
+      if (banner) {
+        if (foundId || foundPrice) {
+          banner.style.color = '#22c55e';
+          banner.innerHTML = `✅ <strong>Auto-Filled from Screenshot:</strong> Order ID: <u>${foundId || 'Check manually'}</u> | Price: <u>${foundPrice ? '₹' + foundPrice : 'Check manually'}</u> ${foundPlat ? '| Platform: ' + foundPlat : ''} — <em>Please verify with the preview image above!</em>`;
+        } else {
+          banner.style.color = '#f59e0b';
+          banner.innerHTML = `⚠️ <strong>Preview Ready above:</strong> Could not auto-read clear digits. Please look at the preview image above & verify fields below.`;
+        }
       }
     } catch (e) {
-      SD.toast('OCR Scanner could not load. Please enter Order ID manually.', 'warning');
+      if (banner) {
+        banner.style.color = '#f59e0b';
+        banner.innerHTML = '⚠️ Screenshot attached above. Please verify Order ID & Price below.';
+      }
     }
   };
-})();
