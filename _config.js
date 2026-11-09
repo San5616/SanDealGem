@@ -966,3 +966,152 @@ window.detectSanDealCategories = function(titleStr, instStr = '') {
     setTimeout(injectDualSwipeButton, 1600);
   });
 })();
+/* ============================================================================
+   SANDEAL ULTRA-ADVANCED SUITE (7 NEXT-GEN FEATURES + DEAD/CANCELLED CLASSIFIER)
+   ============================================================================ */
+(function initSanDealUltraSuite() {
+  // 1. Universal Dead / Cancelled / Moderation Order Detector
+  SD.isDeadOrCancelledOrder = function(statusStr) {
+    const s = String(statusStr || '').trim().toLowerCase();
+    if (!s) return false;
+    return (
+      s.includes('cancel') ||
+      s.includes('not delivered') ||
+      s.includes('returned to seller') ||
+      s.includes('return') ||
+      s.includes('not live') ||
+      s.includes('deleted') ||
+      s.includes('moderation') ||
+      s.includes('block') ||
+      s.includes('error')
+    );
+  };
+
+  // 2. Feature #7: 1-Tap UPI Deep-Link Pay + Dynamic UPI QR Code Modal
+  window.openSanDealUpiPayModal = function(upiId, payeeName, amount, noteText = 'SanDeal Payout') {
+    const cleanUpi = String(upiId || '').trim();
+    const amt = Math.max(0, Number(amount) || 0);
+    if (!cleanUpi) {
+      SD.toast('⚠️ Please enter a UPI ID or Mobile Number first!', 'warning');
+      return;
+    }
+    const finalPa = cleanUpi.includes('@') ? cleanUpi : `${cleanUpi.replace(/\D/g, '').slice(-10)}@ybl`;
+    const upiUri = `upi://pay?pa=${encodeURIComponent(finalPa)}&pn=${encodeURIComponent(payeeName || 'SanDeal Partner')}&am=${amt.toFixed(2)}&cu=INR&tn=${encodeURIComponent(noteText)}`;
+    const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=${encodeURIComponent(upiUri)}`;
+
+    let modal = document.getElementById('sdUpiQrPayModal');
+    if (!modal) {
+      modal = document.createElement('div');
+      modal.id = 'sdUpiQrPayModal';
+      modal.className = 'modal-backdrop';
+      modal.onclick = e => { if (e.target === modal) modal.classList.remove('open'); };
+      document.body.appendChild(modal);
+    }
+
+    modal.innerHTML = `
+      <div class="modal-box" style="max-width:370px;text-align:center;" onclick="event.stopPropagation()">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+          <h3 style="font-size:0.94rem;">⚡ SanDeal Instant UPI Pay & QR</h3>
+          <button onclick="document.getElementById('sdUpiQrPayModal').classList.remove('open')" style="background:none;border:none;color:var(--text-secondary);font-size:1.1rem;cursor:pointer;">✕</button>
+        </div>
+        <div style="font-size:0.76rem;color:var(--text-secondary);margin-bottom:4px;">Payee: <strong style="color:var(--text-primary);">${SD.escapeHtml(payeeName)}</strong></div>
+        <div class="mono" style="font-size:0.72rem;color:var(--cyan);margin-bottom:8px;">UPI: ${SD.escapeHtml(finalPa)} 📋</div>
+        <div class="mono" style="font-size:1.45rem;font-weight:900;color:#22c55e;margin-bottom:10px;">₹${amt.toLocaleString('en-IN')}</div>
+        <div style="background:#fff;padding:10px;border-radius:12px;display:inline-block;margin-bottom:10px;">
+          <img src="${qrApiUrl}" alt="UPI QR" style="width:190px;height:190px;display:block;" />
+        </div>
+        <div style="font-size:0.66rem;color:var(--text-muted);margin-bottom:10px;">Scan with any UPI App or tap below on mobile</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+          <a href="${upiUri}" class="btn primary" style="justify-content:center;padding:9px;text-decoration:none;grid-column:1/-1;">🚀 1-Tap Pay via GPay / PhonePe / Paytm</a>
+          <button type="button" class="btn" style="justify-content:center;" onclick="SD.copyText('${SD.escapeHtml(finalPa)}','UPI ID')">📋 Copy UPI</button>
+          <button type="button" class="btn" style="justify-content:center;" onclick="SD.copyText('${amt}','Amount')">📋 Copy ₹${amt}</button>
+        </div>
+      </div>
+    `;
+    modal.classList.add('open');
+  };
+
+  // 3. Feature #4: Account Health & Review Risk Calculator
+  window.computeSanDealAccountHealth = function(userId, ordersList) {
+    const uid = String(userId || '').toLowerCase();
+    const myOrds = (ordersList || []).filter(o => String(o.userId || '').toLowerCase() === uid);
+    const recent7d = myOrds.filter(o => o.orderDate && (SD.daysBetween(o.orderDate) || 0) <= 7 && !SD.isDeadOrCancelledOrder(o.orderStatus));
+    const blockedEver = myOrds.some(o => String(o.orderStatus || '').toLowerCase().includes('block') || String(o.orderStatus || '').toLowerCase().includes('deleted'));
+
+    if (blockedEver || recent7d.length >= 4) {
+      return { label: `🔴 High Risk (${recent7d.length}/7d)`, color: '#ef4444', bg: 'rgba(239,68,68,0.16)', tip: 'Give this account 5 days rest or use Only-Order deals' };
+    }
+    if (recent7d.length >= 2) {
+      return { label: `🟡 Warm (${recent7d.length}/7d)`, color: '#f59e0b', bg: 'rgba(245,158,11,0.16)', tip: '2–3 orders in last 7 days' };
+    }
+    return { label: `🟢 Safe (${recent7d.length}/7d)`, color: '#22c55e', bg: 'rgba(34,197,94,0.15)', tip: 'Healthy account for review deals' };
+  };
+
+  // 4. Feature #8: Multi-Language Hindi Voice Assistant for Buyers
+  window.speakSanDealHindiGuide = function(orderObj) {
+    if (!('speechSynthesis' in window)) {
+      SD.toast('Voice guide not supported on this browser.', 'warning');
+      return;
+    }
+    window.speechSynthesis.cancel();
+    let msg = '';
+    if (!orderObj) {
+      msg = 'नमस्ते! सैन डील पोर्टल में आपका स्वागत है। यहाँ आप अपने सभी ऑर्डर्स का स्टेटस, रिफंड और नई डील्स देख सकते हैं। किसी भी ऑर्डर का प्रूफ अपलोड करने के लिए सबमिट प्रूफ बटन दबाएं।';
+    } else {
+      const st = String(orderObj.orderStatus || '').toLowerCase();
+      const pay = String(orderObj.paymentStatus || '').toLowerCase();
+      if (pay === 'paid') {
+        msg = `ऑर्डर नंबर ${orderObj.orderNo} का ${orderObj.buyerActualGot || orderObj.buyerToGet} रुपये पेमेंट आपके अकाउंट में भेजा जा चुका है। धन्यवाद!`;
+      } else if (st === 'got refund') {
+        msg = `बधाई हो! ऑर्डर नंबर ${orderObj.orderNo} का रिफंड अप्रूव हो चुका है। बहुत जल्द ${orderObj.buyerToGet} रुपये आपके यूपीआई में ट्रांसफर कर दिए जाएंगे।`;
+      } else if (st === 'order placed') {
+        msg = `ऑर्डर नंबर ${orderObj.orderNo} अभी प्लेस हुआ है। प्रोडक्ट डिलीवर होने के बाद कृपया प्रूफ बटन दबाकर डिलीवरी अपडेट करें।`;
+      } else if (st === 'product received') {
+        msg = `ऑर्डर नंबर ${orderObj.orderNo} डिलीवर हो चुका है। कृपया अमेज़न या फ्लिपकार्ट पर इसकी रेटिंग या रिव्यू सबमिट करें।`;
+      } else if (SD.isDeadOrCancelledOrder(st)) {
+        msg = `ऑर्डर नंबर ${orderObj.orderNo} कैंसिल या नॉट डिलीवर्ड है, इसलिए इसका रिफंड लागू नहीं है।`;
+      } else {
+        msg = `ऑर्डर नंबर ${orderObj.orderNo} पर काम चल रहा है। रिफंड फॉर्म भरने के बाद रिफंड आते ही आपको पेमेंट मिल जाएगा।`;
+      }
+    }
+    const u = new SpeechSynthesisUtterance(msg);
+    u.lang = 'hi-IN';
+    u.rate = 0.98;
+    window.speechSynthesis.speak(u);
+    SD.toast('🔊 बोलकर जानकारी दी जा रही है...', 'info', 3000);
+  };
+
+  // 5. Feature #1: Lightweight Client-Side OCR Order Screenshot Reader (Tesseract CDN on demand)
+  window.scanSanDealScreenshotOCR = async function(base64Img, targetOrderIdInputId, targetPriceInputId) {
+    if (!base64Img) { SD.toast('Please select an order screenshot first!', 'warning'); return; }
+    SD.toast('🔍 AI Scanning Screenshot for Order ID & Price...', 'info', 4000);
+    try {
+      if (!window.Tesseract) {
+        await new Promise((res, rej) => {
+          const sc = document.createElement('script');
+          sc.src = 'https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js';
+          sc.onload = res; sc.onerror = rej;
+          document.head.appendChild(sc);
+        });
+      }
+      const { data: { text } } = await window.Tesseract.recognize(base64Img, 'eng');
+      const idMatch = text.match(/\b\d{3}-\d{7}-\d{7}\b/) || text.match(/\bOD\d{14,22}\b/i) || text.match(/\bORD\d{8,16}\b/i);
+      const priceMatch = text.match(/(?:Total|Order Total|Grand Total|Amount|Rs\.?|INR|₹)\s*[:=-]?\s*([\d,]{2,7}(?:\.\d{1,2})?)/i);
+
+      if (idMatch && document.getElementById(targetOrderIdInputId)) {
+        document.getElementById(targetOrderIdInputId).value = idMatch[0];
+      }
+      if (priceMatch && priceMatch[1] && document.getElementById(targetPriceInputId)) {
+        document.getElementById(targetPriceInputId).value = priceMatch[1].replace(/,/g, '');
+        if (typeof calcAdminAddMath === 'function') calcAdminAddMath();
+      }
+      if (idMatch || priceMatch) {
+        SD.toast(`✅ OCR Auto-Filled: ${idMatch ? 'ID ' + idMatch[0] : ''} ${priceMatch ? '₹' + priceMatch[1] : ''}`, 'success', 4500);
+      } else {
+        SD.toast('Could not clearly read Order ID from image. Please type or verify manually.', 'warning');
+      }
+    } catch (e) {
+      SD.toast('OCR Scanner could not load. Please enter Order ID manually.', 'warning');
+    }
+  };
+})();
