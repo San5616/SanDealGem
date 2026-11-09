@@ -4791,6 +4791,54 @@
     }
 
     refreshAdminData();
+    /* ============================================================================
+       LIVE DUPLICATE PLATFORM ORDER ID GUARD (ADMIN ADD ORDER FORM)
+       ============================================================================ */
+    function checkAdminLiveDuplicateOrderId() {
+      const inp = document.getElementById('addPlatformOrderId');
+      const warnEl = document.getElementById('addOrderCooldownWarn');
+      const btn = document.getElementById('adminAddBtn');
+      if (!inp || !warnEl) return true;
+
+      const val = inp.value.trim().toLowerCase();
+      if (!val || val.length < 5) {
+        inp.style.borderColor = '';
+        if (btn) btn.disabled = false;
+        return true;
+      }
+
+      const dup = (typeof allOrders !== 'undefined' ? allOrders : []).find(
+        o => String(o.platformOrderId || '').trim().toLowerCase() === val
+      );
+
+      if (dup) {
+        inp.style.borderColor = '#ef4444';
+        warnEl.style.display = 'block';
+        warnEl.innerHTML = `🚫 <strong>DUPLICATE ORDER ID ERROR:</strong> Order ID <u>${SD.escapeHtml(inp.value.trim())}</u> पहले से ही Order <strong>#${dup.orderNo}</strong> (${SD.escapeHtml(dup.accountName)} — ${SD.escapeHtml(dup.productName.slice(0, 30))}...) में दर्ज है!`;
+        if (btn) btn.disabled = true;
+        SD.toast(`🚫 Duplicate Entry! Already exists in Order #${dup.orderNo}`, 'error', 3500);
+        return false;
+      } else {
+        inp.style.borderColor = '#22c55e';
+        if (btn) btn.disabled = false;
+        if (warnEl.innerHTML.includes('DUPLICATE ORDER ID ERROR')) {
+          warnEl.style.display = 'none';
+          if (typeof checkAddOrderCooldownWarning === 'function') checkAddOrderCooldownWarning();
+        }
+        return true;
+      }
+    }
+
+    (function bindAdminDuplicateOrderIdWatcher() {
+      const inp = document.getElementById('addPlatformOrderId');
+      if (inp) {
+        inp.addEventListener('input', checkAdminLiveDuplicateOrderId);
+        inp.addEventListener('change', checkAdminLiveDuplicateOrderId);
+        inp.addEventListener('blur', checkAdminLiveDuplicateOrderId);
+      }
+    })();
+
+    
   </script>
 </body>
 </html>
