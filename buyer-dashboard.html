@@ -2857,6 +2857,124 @@ if (window.checkNewDealsForPushAlert) window.checkNewDealsForPushAlert(buyerDeal
         window.applyOrderFilters._upgradedV8 = true;
       }
     })();
+    /* ============================================================================
+       1. MISSING EMAIL / UPI AUTO-POPUP + CONTINUOUS BLINKING INDICATOR
+       2. LIVE DUPLICATE PLATFORM ORDER ID CHECKER (BUYER FORM)
+       ============================================================================ */
+    let buyerProfilePopupShownOnce = false;
+
+    function checkAndEnforceBuyerEmailUpiStatus() {
+      const u = (typeof currentUser !== 'undefined' && currentUser) ? currentUser : SD.getUser();
+      if (!u) return;
+      const pKey = u.parentUserId || u.userId;
+      const savedUpi = (localStorage.getItem('sandeal_buyer_upi_' + pKey) || '').trim();
+      const savedEmail = (u.email || localStorage.getItem('sandeal_buyer_email_' + pKey) || '').trim();
+      const isMissing = !savedEmail || !savedUpi;
+
+      const upiBtn = document.getElementById('upiStatusBtn');
+      const editToggleBtn = document.querySelector('#profEditToggleRow button');
+
+      if (upiBtn) {
+        if (isMissing) {
+          const missingWhat = (!savedEmail && !savedUpi) ? 'Email & UPI' : (!savedEmail ? 'Email ID' : 'UPI ID');
+          upiBtn.className = 'blink-badge red';
+          upiBtn.style.cssText = 'padding:6px 10px;font-size:0.7rem;cursor:pointer;background:rgba(239,68,68,0.22);color:#ef4444;border:1px solid #ef4444;border-radius:8px;font-weight:800;';
+          upiBtn.innerHTML = `⚠️ Update ${missingWhat}!`;
+        } else {
+          upiBtn.className = 'btn-sm';
+          upiBtn.style.cssText = 'border-color:rgba(34,197,94,0.45);color:#22c55e;';
+          upiBtn.innerHTML = `✅ Email & UPI Saved`;
+        }
+      }
+
+      if (editToggleBtn) {
+        if (isMissing) {
+          editToggleBtn.className = 'blink-badge orange';
+          editToggleBtn.style.width = '100%';
+          editToggleBtn.style.justifyContent = 'center';
+          editToggleBtn.style.padding = '8px';
+        } else {
+          editToggleBtn.className = 'btn-sm';
+        }
+      }
+
+      // Auto-open Profile Modal 3.5 seconds after login if Email or UPI is missing
+      if (isMissing && !buyerProfilePopupShownOnce) {
+        buyerProfilePopupShownOnce = true;
+        setTimeout(() => {
+          const curUpi = (localStorage.getItem('sandeal_buyer_upi_' + pKey) || '').trim();
+          const curEm = (u.email || localStorage.getItem('sandeal_buyer_email_' + pKey) || '').trim();
+          if (!curUpi || !curEm) {
+            if (typeof openProfileModal === 'function') openProfileModal();
+            if (typeof toggleProfileEditFields === 'function') toggleProfileEditFields(true);
+            SD.toast('⚠️ कृपया समय पर पेमेंट और अपडेट पाने के लिए अपना Email और UPI ID अभी अपडेट करें!', 'warning', 6000);
+          }
+        }, 3500);
+      }
+    }
+
+    // Live Duplicate Platform Order ID Guard for Buyer Submit Order Form
+    function checkBuyerLiveDuplicateOrderId() {
+      const inp = document.getElementById('noPlatformOrderId');
+      const alertBox = document.getElementById('buyerCooldownAlert');
+      const submitBtn = document.getElementById('noSubmitBtn');
+      if (!inp || !alertBox) return true;
+
+      const val = inp.value.trim().toLowerCase();
+      if (!val || val.length < 5) {
+        inp.style.borderColor = '';
+        if (submitBtn) submitBtn.disabled = false;
+        return true;
+      }
+
+      const dup = (typeof buyerOrders !== 'undefined' ? buyerOrders : []).find(
+        o => String(o.platformOrderId || '').trim().toLowerCase() === val
+      );
+
+      if (dup) {
+        inp.style.borderColor = '#ef4444';
+        alertBox.style.display = 'block';
+        alertBox.innerHTML = `🚫 <strong>Duplicate Order ID Error:</strong> Order ID <u>${SD.escapeHtml(inp.value.trim())}</u> पहले से ही Order <strong>#${dup.orderNo}</strong> (${SD.escapeHtml(dup.productName.slice(0, 28))}...) में मौजूद है! दोबारा सबमिट नहीं किया जा सकता।`;
+        if (submitBtn) submitBtn.disabled = true;
+        SD.toast(`🚫 Duplicate Entry! Order ID already exists in #${dup.orderNo}`, 'error', 3500);
+        return false;
+      } else {
+        inp.style.borderColor = '#22c55e';
+        if (submitBtn) submitBtn.disabled = false;
+        if (alertBox.innerHTML.includes('Duplicate Order ID Error')) {
+          alertBox.style.display = 'none';
+        }
+        return true;
+      }
+    }
+
+    // Hook into Buyer Dashboard lifecycle automatically
+    (function initBuyerProfileAndDupGuards() {
+      const ordIdInp = document.getElementById('noPlatformOrderId');
+      if (ordIdInp) {
+        ordIdInp.addEventListener('input', checkBuyerLiveDuplicateOrderId);
+        ordIdInp.addEventListener('change', checkBuyerLiveDuplicateOrderId);
+        ordIdInp.addEventListener('blur', checkBuyerLiveDuplicateOrderId);
+      }
+
+      if (typeof window.initUserHeaderUI === 'function') {
+        const origInitHeader = window.initUserHeaderUI;
+        window.initUserHeaderUI = function() {
+          origInitHeader.apply(this, arguments);
+          checkAndEnforceBuyerEmailUpiStatus();
+        };
+      }
+
+      if (typeof window.saveBuyerProfileAndUpi === 'function') {
+        const origSaveProf = window.saveBuyerProfileAndUpi;
+        window.saveBuyerProfileAndUpi = async function() {
+          await origSaveProf.apply(this, arguments);
+          checkAndEnforceBuyerEmailUpiStatus();
+        };
+      }
+
+      setTimeout(checkAndEnforceBuyerEmailUpiStatus, 1200);
+    })();
 
     
   </script>
