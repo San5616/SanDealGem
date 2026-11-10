@@ -543,25 +543,39 @@ document.addEventListener('DOMContentLoaded', () => {
   `;
   document.head.appendChild(st);
 
-  window.setSanDealTableZoom = function(wrapId, pct, btnEl) {
+    window.setSanDealTableZoom = function(wrapId, pct, btnEl) {
     const wrap = document.getElementById(wrapId);
     if (!wrap) return;
-    const tbl = wrap.querySelector('table');
-    if (!tbl) return;
     const scale = Number(pct) / 100;
-    tbl.style.zoom = scale;
-    // Fallback for browsers where CSS zoom behaves differently
-    if (!('zoom' in document.body.style)) {
-      tbl.style.transform = `scale(${scale})`;
-      tbl.style.transformOrigin = 'top left';
-      tbl.style.width = `${Math.round(100 / scale)}%`;
+
+    // Apply zoom to main table AND to both Dual-Swipe tables if Dual-Swipe is active!
+    const targets = [wrap.querySelector('table')];
+    const dualBox = document.getElementById('sdDualSplitContainer');
+    if (dualBox) {
+      dualBox.querySelectorAll('table').forEach(t => targets.push(t));
     }
+
+    targets.filter(Boolean).forEach(tbl => {
+      tbl.style.zoom = scale;
+      if (!('zoom' in document.body.style)) {
+        tbl.style.transform = `scale(${scale})`;
+        tbl.style.transformOrigin = 'top left';
+        tbl.style.width = `${Math.round(100 / scale)}%`;
+      }
+    });
+
     if (btnEl && btnEl.parentElement) {
-      btnEl.parentElement.querySelectorAll('.sd-z-btn').forEach(b => b.classList.remove('active'));
+      btnEl.parentElement.querySelectorAll('.sd-z-btn:not(.sd-dual-btn)').forEach(b => b.classList.remove('active'));
       btnEl.classList.add('active');
     }
     localStorage.setItem('sandeal_tbl_zoom_' + wrapId, pct);
+
+    // Re-sync row heights after zoom change so Left & Right stay 100% aligned!
+    if (typeof window.syncDualPaneRowHeights === 'function') {
+      setTimeout(window.syncDualPaneRowHeights, 60);
+    }
   };
+
 
   function attachUniversalTableZoomBars() {
     document.querySelectorAll('.table-wrap').forEach((wrap, idx) => {
@@ -763,7 +777,7 @@ window.detectSanDealCategories = function(titleStr, instStr = '') {
   st.textContent = `
     .sd-dual-pane-active {
       display: grid !important;
-      grid-template-columns: minmax(145px, 40%) 1fr;
+      grid-template-columns: minmax(145px, 42%) 1fr;
       gap: 0;
       border: 1px solid var(--border-color);
       border-radius: 10px;
@@ -782,6 +796,16 @@ window.detectSanDealCategories = function(titleStr, instStr = '') {
       max-height: 72vh;
       -webkit-overflow-scrolling: touch;
     }
+    .sd-dual-pane-active table {
+      border-collapse: collapse;
+      width: 100%;
+    }
+    .sd-dual-pane-active th,
+    .sd-dual-pane-active td {
+      box-sizing: border-box !important;
+      white-space: nowrap !important;
+      vertical-align: middle !important;
+    }
   `;
   document.head.appendChild(st);
 
@@ -789,7 +813,37 @@ window.detectSanDealCategories = function(titleStr, instStr = '') {
     return document.getElementById('adminTableWrap') || document.getElementById('tableViewWrap');
   }
 
-  // 1. Direct Touch-Swipe on Left Pinned Columns (Works on BOTH Admin & Buyer Dashboards!)
+  // Exact Pixel Row-Height Synchronizer so Left & Right rows NEVER mismatch in height!
+  window.syncDualPaneRowHeights = function() {
+    const splitBox = document.getElementById('sdDualSplitContainer');
+    if (!splitBox) return;
+    const leftRows = splitBox.querySelectorAll('#sdLeftScrollPane tr');
+    const rightRows = splitBox.querySelectorAll('#sdRightScrollPane tr');
+    const len = Math.min(leftRows.length, rightRows.length);
+    if (!len) return;
+
+    // 1. Reset heights first to measure natural height
+    for (let i = 0; i < len; i++) {
+      leftRows[i].style.height = 'auto';
+      rightRows[i].style.height = 'auto';
+    }
+
+    // 2. Measure max height of each row pair & lock both sides to that exact pixel height
+    const heights = [];
+    for (let i = 0; i < len; i++) {
+      const hL = leftRows[i].getBoundingClientRect().height;
+      const hR = rightRows[i].getBoundingClientRect().height;
+      heights.push(Math.ceil(Math.max(hL, hR, 30)));
+    }
+
+    for (let i = 0; i < len; i++) {
+      const hPx = heights[i] + 'px';
+      leftRows[i].style.height = hPx;
+      rightRows[i].style.height = hPx;
+    }
+  };
+
+  // 1. Direct Touch-Swipe on Left Pinned Columns
   function bindLeftColumnIndependentSwipe() {
     const wrap = getActiveOrderTableWrap();
     if (!wrap || wrap.dataset.leftSwipeBound) return;
@@ -819,7 +873,6 @@ window.detectSanDealCategories = function(titleStr, instStr = '') {
         const savedScrollLeft = wrap.scrollLeft;
         const savedScrollTop = wrap.scrollTop;
 
-        // Admin Table
         if (typeof colConfig !== 'undefined' && typeof renderAdminOrders === 'function') {
           const modes = ['productName', 'platformOrderId', 'accountName'];
           const curIdx = modes.indexOf(colConfig.freezeSecond || 'productName');
@@ -828,9 +881,7 @@ window.detectSanDealCategories = function(titleStr, instStr = '') {
           renderAdminOrders();
           requestAnimationFrame(() => { wrap.scrollLeft = savedScrollLeft; wrap.scrollTop = savedScrollTop; });
           SD.toast(`📌 Left Pinned: # + ${colConfig.cols[colConfig.freezeSecond]?.label || colConfig.freezeSecond}`, 'info', 1300);
-        }
-        // Buyer Table
-        else if (typeof buyerColCfg !== 'undefined' && typeof renderBuyerOrders === 'function') {
+        } else if (typeof buyerColCfg !== 'undefined' && typeof renderBuyerOrders === 'function') {
           const modes = ['platformOrderId', 'productName', 'NONE'];
           const curIdx = modes.indexOf(buyerColCfg.freezeSecond || 'platformOrderId');
           const nextIdx = dx < 0 ? (curIdx + 1) % modes.length : (curIdx - 1 + modes.length) % modes.length;
@@ -846,7 +897,7 @@ window.detectSanDealCategories = function(titleStr, instStr = '') {
     }, { passive: true });
   }
 
-  // 2. True Dual-Scroll Split View Mode (Works on BOTH Admin & Buyer Tables!)
+  // 2. True Dual-Scroll Split View Mode
   window.toggleSanDealDualPaneMode = function(btnEl) {
     const wrap = getActiveOrderTableWrap();
     if (!wrap) return;
@@ -892,12 +943,20 @@ window.detectSanDealCategories = function(titleStr, instStr = '') {
     const leftTbl = origTable.cloneNode(true);
     const rightTbl = origTable.cloneNode(true);
 
-    // Find which column indices are sticky (#, Order ID, Product) so Left Pane only shows those!
+    // Apply current saved zoom percentage to both split tables!
+    const savedPct = localStorage.getItem('sandeal_tbl_zoom_' + wrap.id) || '100';
+    const scale = Number(savedPct) / 100;
+    [leftTbl, rightTbl].forEach(t => {
+      t.style.zoom = scale;
+    });
+
+    // Identify Left Pinned columns (#, Checkbox on Admin, Order ID, Product)
     const headerCells = Array.from(origTable.querySelectorAll('thead th'));
     const leftColIndices = new Set();
     headerCells.forEach((th, idx) => {
       const txt = (th.textContent || '').toLowerCase();
       if (
+        idx === 0 ||
         th.classList.contains('sticky-col-1') ||
         th.classList.contains('sticky-col-2') ||
         txt.includes('order id') ||
@@ -910,14 +969,14 @@ window.detectSanDealCategories = function(titleStr, instStr = '') {
     leftTbl.querySelectorAll('tr').forEach(tr => {
       Array.from(tr.children).forEach((cell, idx) => {
         cell.classList.remove('sticky-col-1', 'sticky-col-2');
-        if (!leftColIndices.has(idx)) cell.style.display = 'none';
+        if (!leftColIndices.has(idx)) cell.remove();
       });
     });
 
     rightTbl.querySelectorAll('tr').forEach(tr => {
       Array.from(tr.children).forEach((cell, idx) => {
         cell.classList.remove('sticky-col-1', 'sticky-col-2');
-        if (leftColIndices.has(idx)) cell.style.display = 'none';
+        if (leftColIndices.has(idx)) cell.remove();
       });
     });
 
@@ -926,8 +985,26 @@ window.detectSanDealCategories = function(titleStr, instStr = '') {
     lPane.appendChild(leftTbl);
     rPane.appendChild(rightTbl);
 
-    rPane.addEventListener('scroll', () => { lPane.scrollTop = rPane.scrollTop; }, { passive: true });
-    lPane.addEventListener('scroll', () => { rPane.scrollTop = lPane.scrollTop; }, { passive: true });
+    // Sync exact row heights & vertical scroll
+    requestAnimationFrame(() => {
+      window.syncDualPaneRowHeights();
+      setTimeout(window.syncDualPaneRowHeights, 120);
+    });
+
+    let syncingScroll = false;
+    rPane.addEventListener('scroll', () => {
+      if (syncingScroll) return;
+      syncingScroll = true;
+      lPane.scrollTop = rPane.scrollTop;
+      requestAnimationFrame(() => { syncingScroll = false; });
+    }, { passive: true });
+
+    lPane.addEventListener('scroll', () => {
+      if (syncingScroll) return;
+      syncingScroll = true;
+      rPane.scrollTop = lPane.scrollTop;
+      requestAnimationFrame(() => { syncingScroll = false; });
+    }, { passive: true });
   };
 
   function injectDualSwipeButton() {
@@ -963,12 +1040,18 @@ window.detectSanDealCategories = function(titleStr, instStr = '') {
     }
   }
 
+  window.addEventListener('resize', () => {
+    if (typeof window.syncDualPaneRowHeights === 'function') window.syncDualPaneRowHeights();
+  });
+
   document.addEventListener('DOMContentLoaded', () => {
     setTimeout(injectDualSwipeButton, 500);
     setTimeout(injectDualSwipeButton, 1600);
   });
 })();
-     
+
+
+        
 /* ============================================================================
    SANDEAL ULTRA-ADVANCED SUITE (7 NEXT-GEN FEATURES + DEAD/CANCELLED CLASSIFIER)
    ============================================================================ */
