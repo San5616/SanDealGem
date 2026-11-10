@@ -775,30 +775,41 @@ window.detectSanDealCategories = function(titleStr, instStr = '') {
    (function initSanDealDualSwipeTables() {
   const st = document.createElement('style');
   st.textContent = `
+    /* Outer Wrapper handles SINGLE Unified Up-Down (Vertical) Scroll for BOTH sides together! */
     .sd-dual-pane-active {
       display: grid !important;
-      grid-template-columns: minmax(145px, 42%) 1fr;
+      grid-template-columns: 44% 56%;
       gap: 0;
       border: 1px solid var(--border-color);
       border-radius: 10px;
-      overflow: hidden;
+      max-height: 72vh;
+      overflow-y: auto !important;
+      overflow-x: hidden !important;
       background: var(--bg-secondary);
+      -webkit-overflow-scrolling: touch;
+       align-items: start;
     }
+    /* Left & Right Panes ONLY scroll Left-Right (Horizontally) independently! */
     .sd-pane-left {
-      overflow-x: auto;
-      overflow-y: hidden;
+      overflow-x: auto !important;
+      overflow-y: visible !important;
       border-right: 2px solid var(--accent);
       -webkit-overflow-scrolling: touch;
     }
     .sd-pane-right {
-      overflow-x: auto;
-      overflow-y: auto;
-      max-height: 72vh;
+      overflow-x: auto !important;
+      overflow-y: visible !important;
       -webkit-overflow-scrolling: touch;
     }
     .sd-dual-pane-active table {
       border-collapse: collapse;
       width: 100%;
+    }
+    .sd-dual-pane-active thead th {
+      position: sticky;
+      top: 0;
+      z-index: 25;
+      background: var(--bg-tertiary);
     }
     .sd-dual-pane-active th,
     .sd-dual-pane-active td {
@@ -813,7 +824,7 @@ window.detectSanDealCategories = function(titleStr, instStr = '') {
     return document.getElementById('adminTableWrap') || document.getElementById('tableViewWrap');
   }
 
-  // Exact Pixel Row-Height Synchronizer so Left & Right rows NEVER mismatch in height!
+  // Exact Pixel Row-Height Synchronizer so every row on Left & Right has the exact same height!
   window.syncDualPaneRowHeights = function() {
     const splitBox = document.getElementById('sdDualSplitContainer');
     if (!splitBox) return;
@@ -822,13 +833,11 @@ window.detectSanDealCategories = function(titleStr, instStr = '') {
     const len = Math.min(leftRows.length, rightRows.length);
     if (!len) return;
 
-    // 1. Reset heights first to measure natural height
     for (let i = 0; i < len; i++) {
       leftRows[i].style.height = 'auto';
       rightRows[i].style.height = 'auto';
     }
 
-    // 2. Measure max height of each row pair & lock both sides to that exact pixel height
     const heights = [];
     for (let i = 0; i < len; i++) {
       const hL = leftRows[i].getBoundingClientRect().height;
@@ -843,7 +852,7 @@ window.detectSanDealCategories = function(titleStr, instStr = '') {
     }
   };
 
-  // 1. Direct Touch-Swipe on Left Pinned Columns
+  // 1. Direct Touch-Swipe on Left Pinned Columns (When in normal non-split table mode)
   function bindLeftColumnIndependentSwipe() {
     const wrap = getActiveOrderTableWrap();
     if (!wrap || wrap.dataset.leftSwipeBound) return;
@@ -897,7 +906,7 @@ window.detectSanDealCategories = function(titleStr, instStr = '') {
     }, { passive: true });
   }
 
-  // 2. True Dual-Scroll Split View Mode
+  // 2. True Dual-Swipe Mode (Unified Up/Down Scroll + Independent Left/Right Scroll)
   window.toggleSanDealDualPaneMode = function(btnEl) {
     const wrap = getActiveOrderTableWrap();
     if (!wrap) return;
@@ -916,7 +925,7 @@ window.detectSanDealCategories = function(titleStr, instStr = '') {
     wrap.dataset.dualMode = '1';
     if (btnEl) btnEl.classList.add('active');
     window.buildDualSplitView();
-    SD.toast('🟰 Dual-Swipe Active: Left & Right sides now scroll independently!', 'success', 2000);
+    SD.toast('↔️ Dual-Swipe ON: Up/Down moves together, Left/Right swipes separately!', 'success', 2000);
   };
 
   window.buildDualSplitView = function() {
@@ -943,14 +952,12 @@ window.detectSanDealCategories = function(titleStr, instStr = '') {
     const leftTbl = origTable.cloneNode(true);
     const rightTbl = origTable.cloneNode(true);
 
-    // Apply current saved zoom percentage to both split tables!
     const savedPct = localStorage.getItem('sandeal_tbl_zoom_' + wrap.id) || '100';
     const scale = Number(savedPct) / 100;
     [leftTbl, rightTbl].forEach(t => {
       t.style.zoom = scale;
     });
 
-    // Identify Left Pinned columns (#, Checkbox on Admin, Order ID, Product)
     const headerCells = Array.from(origTable.querySelectorAll('thead th'));
     const leftColIndices = new Set();
     headerCells.forEach((th, idx) => {
@@ -985,26 +992,10 @@ window.detectSanDealCategories = function(titleStr, instStr = '') {
     lPane.appendChild(leftTbl);
     rPane.appendChild(rightTbl);
 
-    // Sync exact row heights & vertical scroll
     requestAnimationFrame(() => {
       window.syncDualPaneRowHeights();
-      setTimeout(window.syncDualPaneRowHeights, 120);
+      setTimeout(window.syncDualPaneRowHeights, 150);
     });
-
-    let syncingScroll = false;
-    rPane.addEventListener('scroll', () => {
-      if (syncingScroll) return;
-      syncingScroll = true;
-      lPane.scrollTop = rPane.scrollTop;
-      requestAnimationFrame(() => { syncingScroll = false; });
-    }, { passive: true });
-
-    lPane.addEventListener('scroll', () => {
-      if (syncingScroll) return;
-      syncingScroll = true;
-      rPane.scrollTop = lPane.scrollTop;
-      requestAnimationFrame(() => { syncingScroll = false; });
-    }, { passive: true });
   };
 
   function injectDualSwipeButton() {
@@ -1016,7 +1007,7 @@ window.detectSanDealCategories = function(titleStr, instStr = '') {
       btn.className = 'sd-z-btn sd-dual-btn';
       btn.style.borderColor = 'var(--accent)';
       btn.innerHTML = '↔️ Dual Swipe';
-      btn.title = 'Scroll Left (#, Order ID, Product) & Right columns separately';
+      btn.title = 'Up/Down scrolls together; Left/Right swipes independently';
       btn.onclick = function() { window.toggleSanDealDualPaneMode(this); };
       btnGroup.appendChild(btn);
     });
