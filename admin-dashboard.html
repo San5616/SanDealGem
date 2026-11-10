@@ -3058,36 +3058,191 @@
     }
 
     async function executeBulkAction(type) {
+        let pendingBulkActionType = '';
+
+    function executeBulkAction(type) {
       const nos = Array.from(selectedOrderNos);
       if (!nos.length) return;
-      const todayStr = new Date().toISOString().slice(0, 10);
-      let payload = { orderNos: nos };
 
-      if (type === 'got_refund') {
-        payload.bulkMode = 'status'; payload.orderStatus = 'Got Refund'; payload.autoFillActualGot = true;
-        nos.forEach(no => {
-          const o = allOrders.find(x => String(x.orderNo) === String(no));
-          if (o) { o.orderStatus = 'Got Refund'; o.actualGot = o.toGet; o.refundDate = todayStr; }
-        });
-      } else if (type === 'paid_upi') {
-        payload.bulkMode = 'payment'; payload.paymentStatus = 'Paid'; payload.paymentMethod = 'UPI'; payload.autoFillBuyerGot = true;
-        nos.forEach(no => {
-          const o = allOrders.find(x => String(x.orderNo) === String(no));
-          if (o) { o.paymentStatus = 'Paid'; o.paymentMethod = 'UPI'; o.buyerActualGot = o.buyerToGet; o.paymentDate = todayStr; }
-        });
-      } else if (type === 'custom_status') {
+      if (type === 'custom_status') {
         const st = document.getElementById('bulkCustomStatus').value;
         if (!st) { SD.toast('Select a status first', 'warning'); return; }
-        payload.bulkMode = 'status'; payload.orderStatus = st;
-        nos.forEach(no => {
-          const o = allOrders.find(x => String(x.orderNo) === String(no));
-          if (o) o.orderStatus = st;
+      }
+
+      pendingBulkActionType = type;
+      const selectedObjs = nos.map(no => allOrders.find(x => String(x.orderNo) === String(no))).filter(Boolean);
+      const todayStr = new Date().toISOString().slice(0, 10);
+
+      let modal = document.getElementById('modalBulkConfirmAction');
+      if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'modalBulkConfirmAction';
+        modal.className = 'modal-backdrop';
+        document.body.appendChild(modal);
+      }
+
+      const isPay = (type === 'paid_upi');
+      const isRef = (type === 'got_refund');
+      const customSt = document.getElementById('bulkCustomStatus')?.value || 'Updated';
+
+      const totalBuyerAmt = selectedObjs.reduce((s, o) => s + (Number(o.buyerToGet) || 0), 0);
+      const totalMedAmt = selectedObjs.reduce((s, o) => s + (Number(o.toGet) || 0), 0);
+      const orderTagList = selectedObjs.map(o => '#' + o.orderNo).join(', ');
+
+      // Find default UPI from first selected buyer
+      const firstOrd = selectedObjs[0] || {};
+      const firstAcc = allAccounts.find(a => a.userId.toLowerCase() === String(firstOrd.userId || '').toLowerCase());
+      const parentKey = firstAcc ? (firstAcc.parentUserId || firstAcc.userId) : (firstOrd.userId || '');
+      const savedUpi = localStorage.getItem('sandeal_buyer_upi_' + parentKey) || firstAcc?.mobile || '';
+
+      const autoCombinedNote = isPay
+        ? `💸 Combined Paid ₹${totalBuyerAmt} (${selectedObjs.length} Orders: ${orderTagList})`
+        : (isRef ? `✓ Bulk Refund Approved (${orderTagList})` : '');
+
+      modal.innerHTML = `
+        <div class="modal-box" style="max-width:480px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+            <h3 style="font-size:0.95rem;">
+              ${isPay ? `💸 Bulk Mark Paid (${selectedObjs.length} Orders)` : (isRef ? `✓ Bulk Mark Got Refund (${selectedObjs.length} Orders)` : `⚡ Bulk Update Status → ${SD.escapeHtml(customSt)}`)}
+            </h3>
+            <button type="button" onclick="closeAdminModal('modalBulkConfirmAction')" style="background:none;border:none;color:var(--text-secondary);font-size:1.1rem;cursor:pointer;">✕</button>
+          </div>
+
+          <div style="background:var(--bg-primary);border:1px solid var(--border-color);border-radius:9px;padding:9px 11px;margin-bottom:10px;font-size:0.73rem;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;">
+              <span style="color:var(--text-secondary);font-weight:700;">Selected Orders (${selectedObjs.length}):</span>
+              <strong class="mono" style="font-size:0.95rem;color:#22c55e;">
+                Total: ${SD.formatCurrency(isPay ? totalBuyerAmt : totalMedAmt)}
+              </strong>
+            </div>
+            <div class="mono" style="max-height:95px;overflow-y:auto;font-size:0.66rem;color:var(--text-secondary);line-height:1.45;">
+              ${selectedObjs.map((o, idx) => `${idx + 1}. <strong style="color:var(--accent);">#${o.orderNo}</strong> | ${SD.escapeHtml(o.accountName)} | ${SD.escapeHtml(o.platformOrderId)} → <strong style="color:#22c55e;">₹${isPay ? o.buyerToGet : o.toGet}</strong>`).join('<br/>')}
+            </div>
+          </div>
+
+          <form onsubmit="confirmAndSubmitBulkAction(event)">
+            <div class="field-grid" style="margin-bottom:10px;">
+              <div class="field">
+                <label>${isPay ? '📅 Payment Date *' : '📅 Action / Refund Date *'}</label>
+                <input type="date" id="bulkModalDate" value="${todayStr}" required />
+              </div>
+              ${isPay ? `
+                <div class="field">
+                  <label>🏦 Payment Mode</label>
+                  <select id="bulkModalPayMode">
+                    <option value="UPI">UPI</option>
+                    <option value="GPay / PhonePe">GPay / PhonePe</option>
+                    <option value="Bank Transfer">Bank Transfer</option>
+                    <option value="Amazon Pay">Amazon Pay</option>
+                    <option value="Cash / Khata Adj">Cash / Khata Adj</option>
+                  </select>
+                </div>
+                <div class="field" style="grid-column:1/-1;">
+                  <label>💳 Paid To UPI ID / Mobile / Paid By Info (Shows to Buyer)</label>
+                  <input type="text" id="bulkModalUpiTarget" class="mono" value="${SD.escapeHtml(savedUpi)}" placeholder="e.g. 9876543210@ybl or Paid by Sanjeet via GPay" />
+                </div>
+              ` : ''}
+              <div class="field" style="grid-column:1/-1;">
+                <label>📝 Combined Note for Buyer & Admin (Saved on all ${selectedObjs.length} orders)</label>
+                <textarea id="bulkModalNotes" rows="2" placeholder="Write combined payment note or order numbers...">${SD.escapeHtml(autoCombinedNote)}</textarea>
+              </div>
+            </div>
+
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+              <button type="submit" class="btn primary" style="flex:1;justify-content:center;padding:10px;font-weight:800;">
+                ${isPay ? `💸 Confirm Paid (${SD.formatCurrency(totalBuyerAmt)}) & Save Note` : `✅ Confirm Bulk Update`}
+              </button>
+              ${isPay ? `
+                <button type="submit" onclick="document.getElementById('modalBulkConfirmAction').dataset.openWa='1'" class="btn success" style="padding:10px;font-weight:800;">
+                  🟢 Save + Send WA Receipt
+                </button>
+              ` : ''}
+            </div>
+          </form>
+        </div>
+      `;
+      modal.dataset.openWa = '0';
+      modal.classList.add('open');
+    }
+
+    async function confirmAndSubmitBulkAction(e) {
+      e.preventDefault();
+      const nos = Array.from(selectedOrderNos);
+      if (!nos.length) return;
+
+      const type = pendingBulkActionType;
+      const actionDate = document.getElementById('bulkModalDate')?.value || new Date().toISOString().slice(0, 10);
+      const customNote = (document.getElementById('bulkModalNotes')?.value || '').trim();
+      const openWaAfter = document.getElementById('modalBulkConfirmAction')?.dataset.openWa === '1';
+
+      const selectedObjs = nos.map(no => allOrders.find(x => String(x.orderNo) === String(no))).filter(Boolean);
+      let payload = { orderNos: nos, notes: customNote };
+
+      if (type === 'got_refund') {
+        payload.bulkMode = 'status';
+        payload.orderStatus = 'Got Refund';
+        payload.autoFillActualGot = true;
+        payload.refundDate = actionDate;
+        selectedObjs.forEach(o => {
+          o.orderStatus = 'Got Refund';
+          o.actualGot = o.toGet;
+          o.refundDate = actionDate;
+          if (customNote) o.notes = o.notes ? `${o.notes} | ${customNote}` : customNote;
+        });
+      } else if (type === 'paid_upi') {
+        const mode = document.getElementById('bulkModalPayMode')?.value || 'UPI';
+        const upiTarget = (document.getElementById('bulkModalUpiTarget')?.value || '').trim();
+        const fullMethod = upiTarget ? `${mode} (${upiTarget})` : mode;
+
+        payload.bulkMode = 'payment';
+        payload.paymentStatus = 'Paid';
+        payload.paymentMethod = fullMethod;
+        payload.paymentDate = actionDate;
+        payload.autoFillBuyerGot = true;
+
+        selectedObjs.forEach(o => {
+          o.paymentStatus = 'Paid';
+          o.paymentMethod = fullMethod;
+          o.buyerActualGot = o.buyerToGet;
+          o.paymentDate = actionDate;
+          if (customNote) o.notes = o.notes ? `${o.notes} | ${customNote}` : customNote;
+        });
+
+        if (openWaAfter && selectedObjs.length) {
+          const totalPaid = selectedObjs.reduce((s, x) => s + (Number(x.buyerToGet) || 0), 0);
+          const firstAcc = allAccounts.find(a => a.userId.toLowerCase() === String(selectedObjs[0].userId || '').toLowerCase());
+          const phone = firstAcc?.whatsApp || firstAcc?.mobile || '';
+          const lines = selectedObjs.map((it, i) => `${i + 1}. #${it.orderNo} | *${it.platformOrderId}* | ${it.productName.slice(0, 22)}... → *₹${it.buyerToGet}*`).join('\n');
+          const waMsg = [
+            `💸 *SANDEAL — COMBINED PAYMENT RECEIPT*`,
+            `👤 *Buyer:* ${selectedObjs[0].accountName} (${selectedObjs[0].userId})`,
+            `📅 *Payment Date:* ${fmtDDMMYY(actionDate)}`,
+            `🏦 *Paid Via:* ${fullMethod}`,
+            `📦 *Orders Settled (${selectedObjs.length}):*`,
+            `────────────────────`,
+            lines,
+            `────────────────────`,
+            customNote ? `📝 *Note:* ${customNote}` : '',
+            `💰 *TOTAL AMOUNT PAID: ₹${totalPaid}*`,
+            `────────────────────`,
+            SANDEAL_FOOTER
+          ].filter(Boolean).join('\n');
+          setTimeout(() => openSmartWhatsApp(phone, waMsg), 250);
+        }
+      } else if (type === 'custom_status') {
+        const st = document.getElementById('bulkCustomStatus').value;
+        payload.bulkMode = 'status';
+        payload.orderStatus = st;
+        selectedObjs.forEach(o => {
+          o.orderStatus = st;
+          if (customNote) o.notes = o.notes ? `${o.notes} | ${customNote}` : customNote;
         });
       }
 
+      closeAdminModal('modalBulkConfirmAction');
       clearBulkSelection();
       refreshLocalAdminViews();
-      showFlashBanner(`⚡ Updated ${nos.length} orders on SanDeal!`);
+      showFlashBanner(`⚡ Updated ${nos.length} orders (${actionDate}) with combined note!`);
 
       const res = await SD.api('bulkUpdateOrders', payload);
       if (!res?.success) {
@@ -3095,6 +3250,7 @@
         refreshAdminData(true);
       }
     }
+
 
     function closeAdminModal(id) { document.getElementById(id).classList.remove('open'); }
 
