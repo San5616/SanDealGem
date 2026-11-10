@@ -543,26 +543,22 @@ document.addEventListener('DOMContentLoaded', () => {
   `;
   document.head.appendChild(st);
 
-    window.setSanDealTableZoom = function(wrapId, pct, btnEl) {
+      window.setSanDealTableZoom = function(wrapId, pct, btnEl) {
     const wrap = document.getElementById(wrapId);
     if (!wrap) return;
     const scale = Number(pct) / 100;
 
-    // Apply zoom to main table AND to both Dual-Swipe tables if Dual-Swipe is active!
-    const targets = [wrap.querySelector('table')];
-    const dualBox = document.getElementById('sdDualSplitContainer');
-    if (dualBox) {
-      dualBox.querySelectorAll('table').forEach(t => targets.push(t));
+    // 1. Zoom original table
+    const origTbl = wrap.querySelector('table');
+    if (origTbl) {
+      origTbl.style.zoom = scale;
     }
 
-    targets.filter(Boolean).forEach(tbl => {
-      tbl.style.zoom = scale;
-      if (!('zoom' in document.body.style)) {
-        tbl.style.transform = `scale(${scale})`;
-        tbl.style.transformOrigin = 'top left';
-        tbl.style.width = `${Math.round(100 / scale)}%`;
-      }
-    });
+    // 2. If Dual-Swipe container is active, zoom the ENTIRE container as ONE unit so Left & Right stay 100% proportional!
+    const dualBox = document.getElementById('sdDualSplitContainer');
+    if (dualBox) {
+      dualBox.style.zoom = scale;
+    }
 
     if (btnEl && btnEl.parentElement) {
       btnEl.parentElement.querySelectorAll('.sd-z-btn:not(.sd-dual-btn)').forEach(b => b.classList.remove('active'));
@@ -570,12 +566,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     localStorage.setItem('sandeal_tbl_zoom_' + wrapId, pct);
 
-    // Re-sync row heights after zoom change so Left & Right stay 100% aligned!
     if (typeof window.syncDualPaneRowHeights === 'function') {
-      setTimeout(window.syncDualPaneRowHeights, 60);
+      setTimeout(window.syncDualPaneRowHeights, 50);
     }
   };
-
 
   function attachUniversalTableZoomBars() {
     document.querySelectorAll('.table-wrap').forEach((wrap, idx) => {
@@ -772,40 +766,60 @@ window.detectSanDealCategories = function(titleStr, instStr = '') {
      Order ID <-> Product <-> Account without losing Right-side scroll position!
    - Also provides a 1-Tap True Split-Pane Dual Horizontal Scrollbar mode.
    ============================================================================ */
-   
-  (function initSanDealDualSwipeTables() {
+   (function initSanDealDualSwipeTables() {
   const st = document.createElement('style');
   st.textContent = `
-    /* Single-Table Unified Dual-Swipe Mode:
-       Left sticky cell becomes an independent horizontal scroll strip containing Order ID + Product + Account,
-       while staying inside the EXACT SAME <tr> row so heights & zoom NEVER mismatch! */
-    .sd-single-dual-strip {
-      display: flex !important;
-      align-items: center;
-      gap: 10px;
+    /* Unified Up/Down Scroll on outer box + Smooth Independent Left/Right Swipe on Left & Right Panes (NO mini scrollbars!) */
+    .sd-dual-pane-active {
+      display: grid !important;
+      grid-template-columns: 42% 58%;
+      gap: 0;
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      max-height: 72vh;
+      overflow-y: auto !important;
+      overflow-x: hidden !important;
+      background: var(--bg-secondary);
+      -webkit-overflow-scrolling: touch;
+      align-items: start;
+    }
+    .sd-pane-left {
       overflow-x: auto !important;
       overflow-y: hidden !important;
-      max-width: 175px;
-      scrollbar-width: thin;
+      border-right: 2px solid var(--accent);
       -webkit-overflow-scrolling: touch;
-      padding: 2px 4px;
+      scrollbar-width: none;
     }
-    .sd-single-dual-strip::-webkit-scrollbar {
-      height: 3px;
+    .sd-pane-left::-webkit-scrollbar {
+      display: none;
     }
-    .sd-single-dual-strip::-webkit-scrollbar-thumb {
-      background: var(--accent);
-      border-radius: 3px;
+    .sd-pane-right {
+      overflow-x: auto !important;
+      overflow-y: hidden !important;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
     }
-    .sd-dual-item {
-      flex: 0 0 auto;
-      white-space: nowrap;
-      padding-right: 8px;
-      border-right: 1px dashed var(--border-color);
+    .sd-pane-right::-webkit-scrollbar {
+      display: none;
     }
-    .sd-dual-item:last-child {
-      border-right: none;
-      padding-right: 2px;
+    .sd-dual-pane-active table {
+      border-collapse: collapse;
+      width: 100%;
+      margin: 0;
+    }
+    .sd-dual-pane-active thead th {
+      position: sticky !important;
+      top: 0 !important;
+      left: auto !important;
+      z-index: 25 !important;
+      background: var(--bg-tertiary) !important;
+    }
+    .sd-dual-pane-active th,
+    .sd-dual-pane-active td {
+      position: static !important;
+      box-sizing: border-box !important;
+      white-space: nowrap !important;
+      vertical-align: middle !important;
     }
   `;
   document.head.appendChild(st);
@@ -814,85 +828,32 @@ window.detectSanDealCategories = function(titleStr, instStr = '') {
     return document.getElementById('adminTableWrap') || document.getElementById('tableViewWrap');
   }
 
-  // Convert sticky-col-2 inside the SAME table into an independently scrollable horizontal strip (Order ID <-> Product <-> Account)
-  window.applySingleTableDualSwipe = function() {
-    const wrap = getActiveOrderTableWrap();
-    if (!wrap) return;
+  // Uses unscaled offsetHeight so zoom (85% / 75% / 65% / 55%) NEVER shrinks Left rows!
+  window.syncDualPaneRowHeights = function() {
+    const splitBox = document.getElementById('sdDualSplitContainer');
+    if (!splitBox) return;
+    const leftRows = splitBox.querySelectorAll('#sdLeftScrollPane tr');
+    const rightRows = splitBox.querySelectorAll('#sdRightScrollPane tr');
+    const len = Math.min(leftRows.length, rightRows.length);
+    if (!len) return;
 
-    // Remove any old split container if present
-    const oldSplit = document.getElementById('sdDualSplitContainer');
-    if (oldSplit) oldSplit.remove();
-    wrap.style.display = 'block';
-
-    if (wrap.dataset.dualMode !== '1') return;
-
-    const tbl = wrap.querySelector('table');
-    if (!tbl) return;
-
-    const headerCells = Array.from(tbl.querySelectorAll('thead th'));
-    let ordIdIdx = -1, prodIdx = -1, accIdx = -1, sticky2Idx = -1;
-
-    headerCells.forEach((th, idx) => {
-      const txt = (th.textContent || '').toLowerCase();
-      if (th.classList.contains('sticky-col-2')) sticky2Idx = idx;
-      if (txt.includes('order id')) ordIdIdx = idx;
-      else if (txt.includes('product')) prodIdx = idx;
-      else if (txt.includes('account')) accIdx = idx;
-    });
-
-    const targetStickyIdx = sticky2Idx >= 0 ? sticky2Idx : (ordIdIdx >= 0 ? ordIdIdx : prodIdx);
-    if (targetStickyIdx < 0) return;
-
-    const mergeIndices = [ordIdIdx, prodIdx, accIdx].filter(i => i >= 0 && i !== targetStickyIdx);
-
-    // 1. Update Header cell to show combined scrollable header
-    const mainTh = headerCells[targetStickyIdx];
-    if (mainTh && !mainTh.dataset.dualMerged) {
-      mainTh.dataset.dualMerged = '1';
-      mainTh.classList.add('sticky-col-2');
-      const labels = [mainTh.innerHTML];
-      mergeIndices.forEach(i => {
-        if (headerCells[i]) {
-          labels.push(headerCells[i].innerHTML);
-          headerCells[i].style.display = 'none';
-        }
-      });
-      mainTh.innerHTML = `<div class="sd-single-dual-strip" title="Swipe Left/Right here independently!">${labels.map(l => `<span class="sd-dual-item">${l}</span>`).join('')}</div>`;
+    for (let i = 0; i < len; i++) {
+      leftRows[i].style.height = '';
+      rightRows[i].style.height = '';
     }
 
-    // 2. Update every Body row's sticky-col-2 cell to hold the horizontal swipe strip of (Order ID + Product + Account)
-    tbl.querySelectorAll('tbody tr').forEach(tr => {
-      const cells = Array.from(tr.children);
-      const mainTd = cells[targetStickyIdx];
-      if (!mainTd || mainTd.dataset.dualMerged) return;
-      mainTd.dataset.dualMerged = '1';
-      mainTd.classList.add('sticky-col-2');
+    const heights = [];
+    for (let i = 0; i < len; i++) {
+      const hL = leftRows[i].offsetHeight;
+      const hR = rightRows[i].offsetHeight;
+      heights.push(Math.max(hL, hR, 32));
+    }
 
-      const parts = [`<div class="sd-dual-item">${mainTd.innerHTML}</div>`];
-      mergeIndices.forEach(i => {
-        if (cells[i]) {
-          parts.push(`<div class="sd-dual-item">${cells[i].innerHTML}</div>`);
-          cells[i].style.display = 'none';
-        }
-      });
-
-      mainTd.innerHTML = `<div class="sd-single-dual-strip" onclick="event.stopPropagation()">${parts.join('')}</div>`;
-    });
-
-    // Sync horizontal scrolling across all left-pinned strips when swiping any one of them!
-    const strips = Array.from(tbl.querySelectorAll('.sd-single-dual-strip'));
-    let syncingLeft = false;
-    strips.forEach(strip => {
-      strip.addEventListener('scroll', () => {
-        if (syncingLeft) return;
-        syncingLeft = true;
-        const sl = strip.scrollLeft;
-        for (let i = 0; i < strips.length; i++) {
-          if (strips[i] !== strip) strips[i].scrollLeft = sl;
-        }
-        requestAnimationFrame(() => { syncingLeft = false; });
-      }, { passive: true });
-    });
+    for (let i = 0; i < len; i++) {
+      const hPx = heights[i] + 'px';
+      leftRows[i].style.height = hPx;
+      rightRows[i].style.height = hPx;
+    }
   };
 
   window.toggleSanDealDualPaneMode = function(btnEl) {
@@ -903,32 +864,92 @@ window.detectSanDealCategories = function(titleStr, instStr = '') {
     if (isDual) {
       wrap.dataset.dualMode = '0';
       if (btnEl) btnEl.classList.remove('active');
-      if (typeof renderAdminOrders === 'function') renderAdminOrders();
-      if (typeof renderBuyerOrders === 'function') renderBuyerOrders();
+      const existingSplit = document.getElementById('sdDualSplitContainer');
+      if (existingSplit) existingSplit.remove();
+      wrap.style.display = 'block';
       SD.toast('Standard Table View restored', 'info', 1400);
       return;
     }
 
-    // Ensure Order ID, Product & Account columns are enabled before merging into Dual-Swipe strip
-    if (typeof colConfig !== 'undefined' && colConfig.cols) {
-      colConfig.cols.platformOrderId.show = true;
-      colConfig.cols.productName.show = true;
-      colConfig.cols.accountName.show = true;
-      if (colConfig.freezeSecond === 'NONE') colConfig.freezeSecond = 'platformOrderId';
-    }
-    if (typeof buyerColCfg !== 'undefined' && buyerColCfg.cols) {
-      buyerColCfg.cols.platformOrderId.show = true;
-      buyerColCfg.cols.productName.show = true;
-      buyerColCfg.cols.accountName.show = true;
-      if (buyerColCfg.freezeSecond === 'NONE') buyerColCfg.freezeSecond = 'platformOrderId';
-    }
-
     wrap.dataset.dualMode = '1';
     if (btnEl) btnEl.classList.add('active');
-    if (typeof renderAdminOrders === 'function') renderAdminOrders();
-    if (typeof renderBuyerOrders === 'function') renderBuyerOrders();
-    window.applySingleTableDualSwipe();
-    SD.toast('↔️ Dual-Swipe ON: Swipe inside the Left Pinned column & Right columns independently!', 'success', 2200);
+    window.buildDualSplitView();
+    SD.toast('↔️ Dual-Swipe ON: Left & Right sides swipe smoothly & independently!', 'success', 2000);
+  };
+
+  window.buildDualSplitView = function() {
+    const wrap = getActiveOrderTableWrap();
+    if (!wrap || wrap.dataset.dualMode !== '1') return;
+
+    let splitBox = document.getElementById('sdDualSplitContainer');
+    if (!splitBox) {
+      splitBox = document.createElement('div');
+      splitBox.id = 'sdDualSplitContainer';
+      splitBox.className = 'sd-dual-pane-active';
+      wrap.parentNode.insertBefore(splitBox, wrap);
+    }
+
+    const origTable = wrap.querySelector('table');
+    if (!origTable) return;
+    wrap.style.display = 'none';
+
+    // Apply zoom to the outer splitBox as a single unit!
+    const savedPct = localStorage.getItem('sandeal_tbl_zoom_' + wrap.id) || '100';
+    splitBox.style.zoom = Number(savedPct) / 100;
+
+    splitBox.innerHTML = `
+      <div class="sd-pane-left" id="sdLeftScrollPane"></div>
+      <div class="sd-pane-right" id="sdRightScrollPane"></div>
+    `;
+
+    const leftTbl = origTable.cloneNode(true);
+    const rightTbl = origTable.cloneNode(true);
+    leftTbl.style.zoom = 1;
+    rightTbl.style.zoom = 1;
+
+    // Determine which columns belong in the Left Swipe Pane:
+    // Includes Checkbox, #OrderNo (NOT locked!), Order ID, Product, Account (or whatever user froze)
+    const headerCells = Array.from(origTable.querySelectorAll('thead th'));
+    const leftColIndices = new Set();
+
+    headerCells.forEach((th, idx) => {
+      const txt = (th.textContent || '').toLowerCase();
+      if (
+        th.classList.contains('sticky-col-1') ||
+        th.classList.contains('sticky-col-2') ||
+        txt.includes('#') ||
+        txt.includes('order id') ||
+        txt.includes('product') ||
+        (idx === 0 && th.querySelector('input[type="checkbox"]'))
+      ) {
+        leftColIndices.add(idx);
+      }
+    });
+
+    // Remove sticky classes so #OrderNo scrolls freely inside Left Pane!
+    leftTbl.querySelectorAll('tr').forEach(tr => {
+      Array.from(tr.children).forEach((cell, idx) => {
+        cell.classList.remove('sticky-col-1', 'sticky-col-2');
+        if (!leftColIndices.has(idx)) cell.remove();
+      });
+    });
+
+    rightTbl.querySelectorAll('tr').forEach(tr => {
+      Array.from(tr.children).forEach((cell, idx) => {
+        cell.classList.remove('sticky-col-1', 'sticky-col-2');
+        if (leftColIndices.has(idx)) cell.remove();
+      });
+    });
+
+    const lPane = document.getElementById('sdLeftScrollPane');
+    const rPane = document.getElementById('sdRightScrollPane');
+    lPane.appendChild(leftTbl);
+    rPane.appendChild(rightTbl);
+
+    requestAnimationFrame(() => {
+      window.syncDualPaneRowHeights();
+      setTimeout(window.syncDualPaneRowHeights, 120);
+    });
   };
 
   function injectDualSwipeButton() {
@@ -939,7 +960,7 @@ window.detectSanDealCategories = function(titleStr, instStr = '') {
       btn.className = 'sd-z-btn sd-dual-btn';
       btn.style.borderColor = 'var(--accent)';
       btn.innerHTML = '↔️ Dual Swipe';
-      btn.title = 'Swipe Left Pinned columns (Order ID + Product + Account) & Right columns separately';
+      btn.title = 'Swipe Left & Right sides smoothly and independently';
       btn.onclick = function() { window.toggleSanDealDualPaneMode(this); };
       btnGroup.appendChild(btn);
     });
@@ -949,7 +970,7 @@ window.detectSanDealCategories = function(titleStr, instStr = '') {
       window.renderAdminOrders = function() {
         origAdmin.apply(this, arguments);
         if (document.getElementById('adminTableWrap')?.dataset.dualMode === '1') {
-          window.applySingleTableDualSwipe();
+          window.buildDualSplitView();
         }
       };
       window.renderAdminOrders._dualHooked = true;
@@ -960,12 +981,16 @@ window.detectSanDealCategories = function(titleStr, instStr = '') {
       window.renderBuyerOrders = function() {
         origBuyer.apply(this, arguments);
         if (document.getElementById('tableViewWrap')?.dataset.dualMode === '1') {
-          window.applySingleTableDualSwipe();
+          window.buildDualSplitView();
         }
       };
       window.renderBuyerOrders._dualHooked = true;
     }
   }
+
+  window.addEventListener('resize', () => {
+    if (typeof window.syncDualPaneRowHeights === 'function') window.syncDualPaneRowHeights();
+  });
 
   document.addEventListener('DOMContentLoaded', () => {
     setTimeout(injectDualSwipeButton, 500);
@@ -974,7 +999,6 @@ window.detectSanDealCategories = function(titleStr, instStr = '') {
 })();
 
 
-        
 /* ============================================================================
    SANDEAL ULTRA-ADVANCED SUITE (7 NEXT-GEN FEATURES + DEAD/CANCELLED CLASSIFIER)
    ============================================================================ */
