@@ -758,22 +758,12 @@ window.detectSanDealCategories = function(titleStr, instStr = '') {
      Order ID <-> Product <-> Account without losing Right-side scroll position!
    - Also provides a 1-Tap True Split-Pane Dual Horizontal Scrollbar mode.
    ============================================================================ */
-(function initSanDealDualSwipeTables() {
+   (function initSanDealDualSwipeTables() {
   const st = document.createElement('style');
   st.textContent = `
-    /* Inner scrollable box inside sticky column so Order ID & Product can swipe independently */
-    .sd-left-swipe-cell {
-      overflow-x: auto;
-      scrollbar-width: none;
-      -webkit-overflow-scrolling: touch;
-      max-width: 155px;
-    }
-    .sd-left-swipe-cell::-webkit-scrollbar { display: none; }
-
-    /* Dual Split-Pane Container */
     .sd-dual-pane-active {
       display: grid !important;
-      grid-template-columns: minmax(150px, 42%) 1fr;
+      grid-template-columns: minmax(145px, 40%) 1fr;
       gap: 0;
       border: 1px solid var(--border-color);
       border-radius: 10px;
@@ -792,31 +782,24 @@ window.detectSanDealCategories = function(titleStr, instStr = '') {
       max-height: 72vh;
       -webkit-overflow-scrolling: touch;
     }
-    .sd-dual-hint {
-      font-size: 0.58rem;
-      color: var(--accent);
-      font-weight: 800;
-      padding: 2px 6px;
-      border-radius: 5px;
-      background: var(--accent-glow);
-      border: 1px solid var(--border-hover);
-      cursor: pointer;
-      white-space: nowrap;
-    }
   `;
   document.head.appendChild(st);
 
-  // 1. Direct Touch-Swipe on Left Pinned Columns (Swaps Product <-> Order ID <-> Both without moving Right scroll!)
+  function getActiveOrderTableWrap() {
+    return document.getElementById('adminTableWrap') || document.getElementById('tableViewWrap');
+  }
+
+  // 1. Direct Touch-Swipe on Left Pinned Columns (Works on BOTH Admin & Buyer Dashboards!)
   function bindLeftColumnIndependentSwipe() {
-    const adminWrap = document.getElementById('adminTableWrap');
-    if (!adminWrap || adminWrap.dataset.leftSwipeBound) return;
-    adminWrap.dataset.leftSwipeBound = '1';
+    const wrap = getActiveOrderTableWrap();
+    if (!wrap || wrap.dataset.leftSwipeBound) return;
+    wrap.dataset.leftSwipeBound = '1';
 
     let touchStartX = 0;
     let touchStartY = 0;
     let startedOnSticky = false;
 
-    adminWrap.addEventListener('touchstart', e => {
+    wrap.addEventListener('touchstart', e => {
       const cell = e.target.closest('.sticky-col-1, .sticky-col-2');
       if (cell && e.touches.length === 1) {
         startedOnSticky = true;
@@ -827,40 +810,45 @@ window.detectSanDealCategories = function(titleStr, instStr = '') {
       }
     }, { passive: true });
 
-    adminWrap.addEventListener('touchend', e => {
+    wrap.addEventListener('touchend', e => {
       if (!startedOnSticky || !e.changedTouches || !e.changedTouches.length) return;
       const dx = e.changedTouches[0].clientX - touchStartX;
       const dy = e.changedTouches[0].clientY - touchStartY;
 
-      // Horizontal swipe on left frozen area (>38px)
       if (Math.abs(dx) > 38 && Math.abs(dx) > Math.abs(dy) * 1.4) {
-        const savedScrollLeft = adminWrap.scrollLeft;
-        const savedScrollTop = adminWrap.scrollTop;
+        const savedScrollLeft = wrap.scrollLeft;
+        const savedScrollTop = wrap.scrollTop;
 
+        // Admin Table
         if (typeof colConfig !== 'undefined' && typeof renderAdminOrders === 'function') {
           const modes = ['productName', 'platformOrderId', 'accountName'];
           const curIdx = modes.indexOf(colConfig.freezeSecond || 'productName');
-          const nextIdx = dx < 0
-            ? (curIdx + 1) % modes.length
-            : (curIdx - 1 + modes.length) % modes.length;
+          const nextIdx = dx < 0 ? (curIdx + 1) % modes.length : (curIdx - 1 + modes.length) % modes.length;
           colConfig.freezeSecond = modes[nextIdx];
           renderAdminOrders();
-
-          // Restore exact Right-Side scroll position so Right side never jumps!
-          requestAnimationFrame(() => {
-            adminWrap.scrollLeft = savedScrollLeft;
-            adminWrap.scrollTop = savedScrollTop;
-          });
-          SD.toast(`📌 Left Pinned View: # + ${colConfig.cols[colConfig.freezeSecond]?.label || colConfig.freezeSecond} (Swipe left column to switch)`, 'info', 1400);
+          requestAnimationFrame(() => { wrap.scrollLeft = savedScrollLeft; wrap.scrollTop = savedScrollTop; });
+          SD.toast(`📌 Left Pinned: # + ${colConfig.cols[colConfig.freezeSecond]?.label || colConfig.freezeSecond}`, 'info', 1300);
+        }
+        // Buyer Table
+        else if (typeof buyerColCfg !== 'undefined' && typeof renderBuyerOrders === 'function') {
+          const modes = ['platformOrderId', 'productName', 'NONE'];
+          const curIdx = modes.indexOf(buyerColCfg.freezeSecond || 'platformOrderId');
+          const nextIdx = dx < 0 ? (curIdx + 1) % modes.length : (curIdx - 1 + modes.length) % modes.length;
+          buyerColCfg.freezeSecond = modes[nextIdx];
+          localStorage.setItem('sandeal_buyer_col_cfg_v7', JSON.stringify(buyerColCfg));
+          renderBuyerOrders();
+          requestAnimationFrame(() => { wrap.scrollLeft = savedScrollLeft; wrap.scrollTop = savedScrollTop; });
+          const lbl = buyerColCfg.freezeSecond === 'productName' ? 'Product' : (buyerColCfg.freezeSecond === 'platformOrderId' ? 'Order ID' : 'Only #');
+          SD.toast(`📌 Left Pinned: # + ${lbl}`, 'info', 1300);
         }
       }
       startedOnSticky = false;
     }, { passive: true });
   }
 
-  // 2. True Dual-Scroll Split View Mode (Left columns scroll horizontally in Left Pane, Right columns scroll in Right Pane)
+  // 2. True Dual-Scroll Split View Mode (Works on BOTH Admin & Buyer Tables!)
   window.toggleSanDealDualPaneMode = function(btnEl) {
-    const wrap = document.getElementById('adminTableWrap');
+    const wrap = getActiveOrderTableWrap();
     if (!wrap) return;
     const isDual = wrap.dataset.dualMode === '1';
 
@@ -876,12 +864,12 @@ window.detectSanDealCategories = function(titleStr, instStr = '') {
 
     wrap.dataset.dualMode = '1';
     if (btnEl) btnEl.classList.add('active');
-    buildDualSplitView();
-    SD.toast('🟰 Dual-Swipe Active: Left & Right sides now scroll independently!', 'success', 2200);
+    window.buildDualSplitView();
+    SD.toast('🟰 Dual-Swipe Active: Left & Right sides now scroll independently!', 'success', 2000);
   };
 
   window.buildDualSplitView = function() {
-    const wrap = document.getElementById('adminTableWrap');
+    const wrap = getActiveOrderTableWrap();
     if (!wrap || wrap.dataset.dualMode !== '1') return;
 
     let splitBox = document.getElementById('sdDualSplitContainer');
@@ -894,10 +882,8 @@ window.detectSanDealCategories = function(titleStr, instStr = '') {
 
     const origTable = wrap.querySelector('table');
     if (!origTable) return;
-
     wrap.style.display = 'none';
 
-    // Clone Table into Left Pane (Shows Checkbox, #, Order ID, Product, Account) & Right Pane (Shows all remaining columns)
     splitBox.innerHTML = `
       <div class="sd-pane-left" id="sdLeftScrollPane"></div>
       <div class="sd-pane-right" id="sdRightScrollPane"></div>
@@ -906,19 +892,32 @@ window.detectSanDealCategories = function(titleStr, instStr = '') {
     const leftTbl = origTable.cloneNode(true);
     const rightTbl = origTable.cloneNode(true);
 
-    // Keep first 4 columns (#, Order ID, Product) scrollable in Left Pane
+    // Find which column indices are sticky (#, Order ID, Product) so Left Pane only shows those!
+    const headerCells = Array.from(origTable.querySelectorAll('thead th'));
+    const leftColIndices = new Set();
+    headerCells.forEach((th, idx) => {
+      const txt = (th.textContent || '').toLowerCase();
+      if (
+        th.classList.contains('sticky-col-1') ||
+        th.classList.contains('sticky-col-2') ||
+        txt.includes('order id') ||
+        txt.includes('product')
+      ) {
+        leftColIndices.add(idx);
+      }
+    });
+
     leftTbl.querySelectorAll('tr').forEach(tr => {
       Array.from(tr.children).forEach((cell, idx) => {
         cell.classList.remove('sticky-col-1', 'sticky-col-2');
-        if (idx > 3) cell.style.display = 'none';
+        if (!leftColIndices.has(idx)) cell.style.display = 'none';
       });
     });
 
-    // Keep remaining columns in Right Pane
     rightTbl.querySelectorAll('tr').forEach(tr => {
       Array.from(tr.children).forEach((cell, idx) => {
         cell.classList.remove('sticky-col-1', 'sticky-col-2');
-        if (idx >= 1 && idx <= 3) cell.style.display = 'none';
+        if (leftColIndices.has(idx)) cell.style.display = 'none';
       });
     });
 
@@ -927,13 +926,10 @@ window.detectSanDealCategories = function(titleStr, instStr = '') {
     lPane.appendChild(leftTbl);
     rPane.appendChild(rightTbl);
 
-    // Sync Vertical Scrolling between Left & Right Panes
-    rPane.addEventListener('scroll', () => {
-      lPane.scrollTop = rPane.scrollTop;
-    }, { passive: true });
+    rPane.addEventListener('scroll', () => { lPane.scrollTop = rPane.scrollTop; }, { passive: true });
+    lPane.addEventListener('scroll', () => { rPane.scrollTop = lPane.scrollTop; }, { passive: true });
   };
 
-  // Inject "🟰 Dual Swipe" button into the Zoom Bar & hook into table re-renders
   function injectDualSwipeButton() {
     bindLeftColumnIndependentSwipe();
     document.querySelectorAll('.sd-zoom-bar .sd-zoom-btns').forEach(btnGroup => {
@@ -943,21 +939,27 @@ window.detectSanDealCategories = function(titleStr, instStr = '') {
       btn.className = 'sd-z-btn sd-dual-btn';
       btn.style.borderColor = 'var(--accent)';
       btn.innerHTML = '↔️ Dual Swipe';
-      btn.title = 'Scroll Left (Order ID + Product) & Right columns separately';
+      btn.title = 'Scroll Left (#, Order ID, Product) & Right columns separately';
       btn.onclick = function() { window.toggleSanDealDualPaneMode(this); };
       btnGroup.appendChild(btn);
     });
 
-    // Auto-update Split View whenever renderAdminOrders runs
     if (typeof window.renderAdminOrders === 'function' && !window.renderAdminOrders._dualHooked) {
-      const origRender = window.renderAdminOrders;
+      const origAdmin = window.renderAdminOrders;
       window.renderAdminOrders = function() {
-        origRender.apply(this, arguments);
-        if (document.getElementById('adminTableWrap')?.dataset.dualMode === '1') {
-          window.buildDualSplitView();
-        }
+        origAdmin.apply(this, arguments);
+        if (document.getElementById('adminTableWrap')?.dataset.dualMode === '1') window.buildDualSplitView();
       };
       window.renderAdminOrders._dualHooked = true;
+    }
+
+    if (typeof window.renderBuyerOrders === 'function' && !window.renderBuyerOrders._dualHooked) {
+      const origBuyer = window.renderBuyerOrders;
+      window.renderBuyerOrders = function() {
+        origBuyer.apply(this, arguments);
+        if (document.getElementById('tableViewWrap')?.dataset.dualMode === '1') window.buildDualSplitView();
+      };
+      window.renderBuyerOrders._dualHooked = true;
     }
   }
 
@@ -966,6 +968,7 @@ window.detectSanDealCategories = function(titleStr, instStr = '') {
     setTimeout(injectDualSwipeButton, 1600);
   });
 })();
+     
 /* ============================================================================
    SANDEAL ULTRA-ADVANCED SUITE (7 NEXT-GEN FEATURES + DEAD/CANCELLED CLASSIFIER)
    ============================================================================ */
