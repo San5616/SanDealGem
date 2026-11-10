@@ -766,10 +766,11 @@ window.detectSanDealCategories = function(titleStr, instStr = '') {
      Order ID <-> Product <-> Account without losing Right-side scroll position!
    - Also provides a 1-Tap True Split-Pane Dual Horizontal Scrollbar mode.
    ============================================================================ */
-   (function initSanDealDualSwipeTables() {
+  
+    (function initSanDealDualSwipeTables() {
   const st = document.createElement('style');
   st.textContent = `
-    /* Unified Up/Down Scroll on outer box + Smooth Independent Left/Right Swipe on Left & Right Panes (NO mini scrollbars!) */
+    /* Unified Up/Down Scroll + Smooth Independent Left/Right Swipe (ZERO Scrollbars!) */
     .sd-dual-pane-active {
       display: grid !important;
       grid-template-columns: 42% 58%;
@@ -782,25 +783,28 @@ window.detectSanDealCategories = function(titleStr, instStr = '') {
       background: var(--bg-secondary);
       -webkit-overflow-scrolling: touch;
       align-items: start;
+      scrollbar-width: none !important;
     }
-    .sd-pane-left {
-      overflow-x: auto !important;
-      overflow-y: hidden !important;
-      border-right: 2px solid var(--accent);
-      -webkit-overflow-scrolling: touch;
-      scrollbar-width: none;
-    }
-    .sd-pane-left::-webkit-scrollbar {
-      display: none;
-    }
+    .sd-pane-left,
     .sd-pane-right {
       overflow-x: auto !important;
       overflow-y: hidden !important;
       -webkit-overflow-scrolling: touch;
-      scrollbar-width: none;
+      scrollbar-width: none !important;
+      -ms-overflow-style: none !important;
     }
-    .sd-pane-right::-webkit-scrollbar {
-      display: none;
+    .sd-pane-left {
+      border-right: 2px solid var(--accent);
+    }
+    /* Force hide ALL horizontal/mini scrollbars inside Dual-Swipe tables on Chrome/Android */
+    .sd-dual-pane-active::-webkit-scrollbar,
+    .sd-pane-left::-webkit-scrollbar,
+    .sd-pane-right::-webkit-scrollbar,
+    .sd-dual-pane-active *::-webkit-scrollbar {
+      display: none !important;
+      width: 0 !important;
+      height: 0 !important;
+      background: transparent !important;
     }
     .sd-dual-pane-active table {
       border-collapse: collapse;
@@ -828,7 +832,6 @@ window.detectSanDealCategories = function(titleStr, instStr = '') {
     return document.getElementById('adminTableWrap') || document.getElementById('tableViewWrap');
   }
 
-  // Uses unscaled offsetHeight so zoom (85% / 75% / 65% / 55%) NEVER shrinks Left rows!
   window.syncDualPaneRowHeights = function() {
     const splitBox = document.getElementById('sdDualSplitContainer');
     if (!splitBox) return;
@@ -846,7 +849,7 @@ window.detectSanDealCategories = function(titleStr, instStr = '') {
     for (let i = 0; i < len; i++) {
       const hL = leftRows[i].offsetHeight;
       const hR = rightRows[i].offsetHeight;
-      heights.push(Math.max(hL, hR, 32));
+      heights.push(Math.max(hL, hR, 34));
     }
 
     for (let i = 0; i < len; i++) {
@@ -874,7 +877,7 @@ window.detectSanDealCategories = function(titleStr, instStr = '') {
     wrap.dataset.dualMode = '1';
     if (btnEl) btnEl.classList.add('active');
     window.buildDualSplitView();
-    SD.toast('↔️ Dual-Swipe ON: Left & Right sides swipe smoothly & independently!', 'success', 2000);
+    SD.toast('↔️ Dual-Swipe ON: Left & Right sides swipe smoothly!', 'success', 2000);
   };
 
   window.buildDualSplitView = function() {
@@ -893,7 +896,6 @@ window.detectSanDealCategories = function(titleStr, instStr = '') {
     if (!origTable) return;
     wrap.style.display = 'none';
 
-    // Apply zoom to the outer splitBox as a single unit!
     const savedPct = localStorage.getItem('sandeal_tbl_zoom_' + wrap.id) || '100';
     splitBox.style.zoom = Number(savedPct) / 100;
 
@@ -907,26 +909,22 @@ window.detectSanDealCategories = function(titleStr, instStr = '') {
     leftTbl.style.zoom = 1;
     rightTbl.style.zoom = 1;
 
-    // Determine which columns belong in the Left Swipe Pane:
-    // Includes Checkbox, #OrderNo (NOT locked!), Order ID, Product, Account (or whatever user froze)
+    // Cleanly keep Checkbox, #OrderNo, Order ID & Product in Left Pane; move Account & all other columns to Right Pane!
     const headerCells = Array.from(origTable.querySelectorAll('thead th'));
     const leftColIndices = new Set();
 
     headerCells.forEach((th, idx) => {
       const txt = (th.textContent || '').toLowerCase();
       if (
-        th.classList.contains('sticky-col-1') ||
-        th.classList.contains('sticky-col-2') ||
+        (idx === 0 && th.querySelector('input[type="checkbox"]')) ||
         txt.includes('#') ||
         txt.includes('order id') ||
-        txt.includes('product') ||
-        (idx === 0 && th.querySelector('input[type="checkbox"]'))
+        txt.includes('product')
       ) {
         leftColIndices.add(idx);
       }
     });
 
-    // Remove sticky classes so #OrderNo scrolls freely inside Left Pane!
     leftTbl.querySelectorAll('tr').forEach(tr => {
       Array.from(tr.children).forEach((cell, idx) => {
         cell.classList.remove('sticky-col-1', 'sticky-col-2');
@@ -945,6 +943,25 @@ window.detectSanDealCategories = function(titleStr, instStr = '') {
     const rPane = document.getElementById('sdRightScrollPane');
     lPane.appendChild(leftTbl);
     rPane.appendChild(rightTbl);
+
+    // Sync checkbox clicks inside Left Split Pane back to main table & bulk bar!
+    leftTbl.querySelectorAll('.row-select-cb').forEach(cb => {
+      cb.onchange = function() {
+        if (typeof toggleOrderSelection === 'function') {
+          toggleOrderSelection(this.value, this.checked);
+        }
+      };
+    });
+    const allCb = leftTbl.querySelector('#selectAllOrdersCb');
+    if (allCb) {
+      allCb.onchange = function() {
+        const state = this.checked;
+        leftTbl.querySelectorAll('.row-select-cb').forEach(cb => {
+          cb.checked = state;
+          if (typeof toggleOrderSelection === 'function') toggleOrderSelection(cb.value, state);
+        });
+      };
+    }
 
     requestAnimationFrame(() => {
       window.syncDualPaneRowHeights();
@@ -965,6 +982,7 @@ window.detectSanDealCategories = function(titleStr, instStr = '') {
       btnGroup.appendChild(btn);
     });
 
+    // Hook into filter & render functions so Dual-Swipe view ALWAYS updates when filtering by Buyer/Parent!
     if (typeof window.renderAdminOrders === 'function' && !window.renderAdminOrders._dualHooked) {
       const origAdmin = window.renderAdminOrders;
       window.renderAdminOrders = function() {
@@ -997,6 +1015,7 @@ window.detectSanDealCategories = function(titleStr, instStr = '') {
     setTimeout(injectDualSwipeButton, 1600);
   });
 })();
+
 
 
 /* ============================================================================
