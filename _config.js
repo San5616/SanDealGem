@@ -1162,12 +1162,11 @@ window.detectSanDealCategories = function(titleStr, instStr = '') {
                       cleanTxt.match(/\bORD\d{8,16}\b/i);
       const foundId = idMatch ? idMatch[0].replace(/\s+/g, '') : '';
 
-            // 2. Detect Price Paid (Fixes Tesseract reading '₹' symbol as leading '2' before Price!)
+                  // 2. Detect Price Paid
       const priceMatch = cleanTxt.match(/(?:Order Total|Grand Total|Total Amount|Total|Amount Paid|Paid)\s*[:=-]?\s*(?:Rs\.?|INR|₹)?\s*([\d,]{2,7}(?:\.\d{1,2})?)/i);
       let foundPrice = (priceMatch && priceMatch[1]) ? priceMatch[1].replace(/,/g, '') : '';
-      // Strip false leading '2' if OCR misread '₹359' as '2359' when no space was present
       if (foundPrice.length === 4 && foundPrice.startsWith('2') && !cleanTxt.includes(',' + foundPrice.slice(1))) {
-        const raw snippet = (priceMatch && priceMatch[0]) || '';
+        const rawSnippet = (priceMatch && priceMatch[0]) || '';
         if (!/₹|\bRs|\bINR/i.test(rawSnippet)) {
           foundPrice = foundPrice.slice(1);
         }
