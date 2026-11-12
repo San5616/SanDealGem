@@ -1855,7 +1855,9 @@
           `────────────────────`,
           SANDEAL_FOOTER
         ].join('\n');
-      } else if (purpose === 'MED_FOLLOWUP') {
+            } else if (purpose === 'MED_FOLLOWUP') {
+        const fDays = o.refundFormDate ? SD.daysBetween(o.refundFormDate) : null;
+        const oDays = o.orderDate ? SD.daysBetween(o.orderDate) : null;
         body = [
           `🤝 *Hi ${o.mediatorName} — Refund Follow-up (SanDeal)*`,
           `🔢 *Order No:* #${o.orderNo}`,
@@ -1865,8 +1867,12 @@
           `💵 *Price:* ₹${o.pricePaid} | *Less:* ₹${o.less}`,
           `💰 *Refund ToGet:* *₹${o.toGet}*`,
           `📊 *Current Status:* ${o.orderStatus}`,
-          o.refundFormDate ? `📋 *Refund Form Filled:* ${fmtDDMMYY(o.refundFormDate)}` : ''
+          o.orderDate ? `📅 *Order Date:* ${fmtDDMMYY(o.orderDate)}${oDays !== null ? ` (*${oDays} days passed*)` : ''}` : '',
+          o.refundFormDate ? `📋 *Refund Form Filled:* ${fmtDDMMYY(o.refundFormDate)}${fDays !== null ? ` — ⏳ *${fDays} days passed (Refund Still Pending!)*` : ''}` : '',
+          `────────────────────`,
+          `🙏 *Kindly check and release the pending refund for this order as soon as possible. Thank you!*`
         ].filter(Boolean).join('\n');
+
       } else if (purpose === 'CUSTOM_OTHER') {
         body = [
           header,
@@ -4565,7 +4571,7 @@
       }).join('');
     }
 
-        function sendMediatorPendingReminder(medName, phone) {
+            function sendMediatorPendingReminder(medName, phone) {
       // Only include TRUE valid pending orders (Never include Returned to seller or Cancelled!)
       const pending = allOrders.filter(o =>
         String(o.mediatorName || '').toLowerCase() === medName.toLowerCase() &&
@@ -4573,19 +4579,33 @@
       );
       const sum = pending.reduce((acc, x) => acc + (Number(x.toGet) || 0), 0);
 
-      const lines = pending.slice(0, 20).map((o, i) => {
+      const lines = pending.slice(0, 25).map((o, i) => {
         const shortProd = String(o.productName || '').trim().split(/\s+/).slice(0, 6).join(' ');
-        return `${i + 1}. #${o.orderNo} | *${o.platformOrderId}* | 📦 ${shortProd} → *₹${o.toGet}* (${o.orderStatus})`;
-      }).join('\n');
+        const formDays = o.refundFormDate ? SD.daysBetween(o.refundFormDate) : null;
+        const ordDays = o.orderDate ? SD.daysBetween(o.orderDate) : null;
+
+        let daysPassedText = '';
+        if (formDays !== null) {
+          daysPassedText = ` | ⏳ *${formDays} days passed* since Refund Form (${fmtDDMMYY(o.refundFormDate)})`;
+        } else if (ordDays !== null) {
+          daysPassedText = ` | ⏳ *${ordDays} days passed* since Order Date (${fmtDDMMYY(o.orderDate)})`;
+        }
+
+        return `${i + 1}. #${o.orderNo} | *${o.platformOrderId}* | 📦 ${shortProd} → *₹${o.toGet}* (${o.orderStatus}${daysPassedText})`;
+      }).join('\n\n');
 
       const msg = [
         `🤝 *Hi ${medName} — Pending Refund Summary (SanDeal)*`,
         `📦 *Valid Pending Orders:* ${pending.length}`,
-        `💰 *Total Pending ToGet:* ₹${Math.round(sum).toLocaleString('en-IN')}`,
+        `💰 *Total Pending Refund Amount:* *₹${Math.round(sum).toLocaleString('en-IN')}*`,
         `────────────────────`,
         lines || 'No active pending orders.',
-        pending.length > 20 ? `...and ${pending.length - 20} more orders.` : ''
+        pending.length > 25 ? `\n...and ${pending.length - 25} more pending orders.` : '',
+        `────────────────────`,
+        `⚠️ *Note:* Many of these orders have crossed the standard refund timeline and refund is still pending.`,
+        `🙏 *Kindly verify and release the pending refund amount as soon as possible. Thank you!*`
       ].filter(Boolean).join('\n');
+
       openSmartWhatsApp(phone, msg);
     }
 
