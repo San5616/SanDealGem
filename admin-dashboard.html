@@ -4565,24 +4565,30 @@
       }).join('');
     }
 
-    function sendMediatorPendingReminder(medName, phone) {
+        function sendMediatorPendingReminder(medName, phone) {
       // Only include TRUE valid pending orders (Never include Returned to seller or Cancelled!)
       const pending = allOrders.filter(o =>
         String(o.mediatorName || '').toLowerCase() === medName.toLowerCase() &&
         isMediatorOrderValidPending(o)
       );
       const sum = pending.reduce((acc, x) => acc + (Number(x.toGet) || 0), 0);
-      const lines = pending.slice(0, 15).map((o, i) => `${i + 1}. #${o.orderNo} | *${o.platformOrderId}* → ₹${o.toGet} (${o.orderStatus})`).join('\n');
+
+      const lines = pending.slice(0, 20).map((o, i) => {
+        const shortProd = String(o.productName || '').trim().split(/\s+/).slice(0, 6).join(' ');
+        return `${i + 1}. #${o.orderNo} | *${o.platformOrderId}* | 📦 ${shortProd} → *₹${o.toGet}* (${o.orderStatus})`;
+      }).join('\n');
+
       const msg = [
         `🤝 *Hi ${medName} — Pending Refund Summary (SanDeal)*`,
         `📦 *Valid Pending Orders:* ${pending.length}`,
         `💰 *Total Pending ToGet:* ₹${Math.round(sum).toLocaleString('en-IN')}`,
         `────────────────────`,
         lines || 'No active pending orders.',
-        pending.length > 15 ? `...and ${pending.length - 15} more orders.` : ''
+        pending.length > 20 ? `...and ${pending.length - 20} more orders.` : ''
       ].filter(Boolean).join('\n');
       openSmartWhatsApp(phone, msg);
     }
+
 
     function fillMedForm(name, contact, wa, pass) {
       document.getElementById('medFormCard').classList.add('open');
